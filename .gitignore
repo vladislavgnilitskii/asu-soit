@@ -1,0 +1,30 @@
+# Go бинарники и кэш
+backend/bin/
+*.exe
+*.test
+*.out
+
+# Node / JS
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+
+# Переменные окружения — НИКОГДА не коммитить секреты
+.env
+.env.*
+!.env.example
+
+# Obsidian системные файлы (кэш и workspace — у каждого свои)
+docs/.obsidian/workspace.json
+docs/.obsidian/workspace-mobile.json
+docs/.obsidian/cache
+docs/.obsidian/plugins/
+
+# Arch / Linux
+.DS_Store
+*~
+*.swp
+
+# Логи
+*.log
+logs/
