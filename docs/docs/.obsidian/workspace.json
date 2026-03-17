@@ -164,13 +164,23 @@
               "icon": "lucide-list",
               "title": "Структура Шаблон ADR (техническое решение)"
             }
+          },
+          {
+            "id": "6dd09bd5673ad8fb",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
           }
-        ]
+        ],
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -180,10 +190,11 @@
       "daily-notes:Сегодняшняя заметка": false,
       "templates:Вставить шаблон": false,
       "command-palette:Открыть палитру команд": false,
-      "bases:Создать новую базу": false
+      "bases:Создать новую базу": false,
+      "obsidian-git:Open Git source control": false
     }
   },
-  "active": "7ecadfcc43eaa840",
+  "active": "627f2d5785a5fce5",
   "lastOpenFiles": [
     "Шаблоны/Шаблон для заметок.md",
     "Шаблоны/Шаблон ADR (техническое решение).md",
