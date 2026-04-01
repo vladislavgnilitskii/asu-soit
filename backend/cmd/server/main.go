@@ -5,12 +5,13 @@ import (
 
 	"github.com/vladislavgnilitskii/asu-soit/internal/config"
 	"github.com/vladislavgnilitskii/asu-soit/internal/db"
+	"github.com/vladislavgnilitskii/asu-soit/internal/handler"
+	"github.com/vladislavgnilitskii/asu-soit/internal/repository"
+	"github.com/vladislavgnilitskii/asu-soit/internal/router"
 )
 
 func main() {
 	cfg := config.Load()
-	log.Printf("конфиг загружен: хост БД = %s, порт приложения = %s",
-		cfg.DBHost, cfg.AppPort)
 
 	pool, err := db.NewPool(cfg)
 	if err != nil {
@@ -19,5 +20,16 @@ func main() {
 	defer pool.Close()
 
 	log.Println("подключение к БД успешно")
-	log.Println("сервер готов к запуску")
+
+	// собираем слои по порядку:
+	// pool → repository → handler → router
+	clientRepo    := repository.NewClientRepository(pool)
+	clientHandler := handler.NewClientHandler(clientRepo)
+
+	r := router.Setup(clientHandler)
+
+	log.Printf("сервер запущен на порту %s", cfg.AppPort)
+	if err := r.Run(":" + cfg.AppPort); err != nil {
+		log.Fatalf("ошибка запуска сервера: %v", err)
+	}
 }
