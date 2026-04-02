@@ -21,12 +21,16 @@ func main() {
 
 	log.Println("подключение к БД успешно")
 
-	// собираем слои по порядку:
-	// pool → repository → handler → router
-	clientRepo    := repository.NewClientRepository(pool)
-	clientHandler := handler.NewClientHandler(clientRepo)
+	// репозитории
+	clientRepo  := repository.NewClientRepository(pool)
+	requestRepo := repository.NewRequestRepository(pool)
 
-	r := router.Setup(clientHandler)
+	// хендлеры
+	clientHandler  := handler.NewClientHandler(clientRepo)
+	requestHandler := handler.NewRequestHandler(requestRepo)
+
+	// роутер
+	r := router.Setup(clientHandler, requestHandler)
 
 	log.Printf("сервер запущен на порту %s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
