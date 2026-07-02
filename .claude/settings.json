@@ -1,0 +1,25 @@
+{
+  "SessionStart": [
+    {
+      "matcher": ".*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo 'ASU SOIT project loaded'"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": ".*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "git status --short && echo '---' && git diff --stat",
+          "timeout": 15
+        }
+      ]
+    }
+  ]
+}
