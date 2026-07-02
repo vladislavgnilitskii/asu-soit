@@ -13,16 +13,16 @@ type Client struct {
 	ID         string     `json:"id"`
 	ClientType ClientType `json:"client_type"`
 	Phone      string     `json:"phone"`
-	Email      string     `json:"email,omitempty"`
+	Email      *string    `json:"email,omitempty"` // nullable в БД — указатель
 	CreatedAt  time.Time  `json:"created_at"`
 }
 
 type Individual struct {
-	ID         string `json:"id"`
-	ClientID   string `json:"client_id"`
-	LastName   string `json:"last_name"`
-	FirstName  string `json:"first_name"`
-	MiddleName string `json:"middle_name,omitempty"`
+	ID         string  `json:"id"`
+	ClientID   string  `json:"client_id"`
+	LastName   string  `json:"last_name"`
+	FirstName  string  `json:"first_name"`
+	MiddleName *string `json:"middle_name,omitempty"` // nullable в БД — указатель
 }
 
 type CreateClientRequest struct {
@@ -59,4 +59,35 @@ type CreateRepairRequestDTO struct {
 type UpdateRequestStatusDTO struct {
 	StatusID string `json:"status_id" binding:"required"`
 	Comment  string `json:"comment"`
+}
+
+// Employee — сотрудник
+type Employee struct {
+	ID           string `json:"id"`
+	RoleID       string `json:"role_id"`
+	LastName     string `json:"last_name"`
+	FirstName    string `json:"first_name"`
+	MiddleName   string `json:"middle_name,omitempty"`
+	Login        string `json:"login"`
+	PasswordHash string `json:"-"` // json:"-" — никогда не отдавать в ответе
+	IsActive     bool   `json:"is_active"`
+}
+
+// LoginRequest — данные для входа
+type LoginRequest struct {
+	Login    string `json:"login"    binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// LoginResponse — ответ с токеном
+type LoginResponse struct {
+	Token    string   `json:"token"`
+	Employee Employee `json:"employee"`
+}
+
+// Claims — данные которые хранятся внутри JWT токена
+type Claims struct {
+	EmployeeID string `json:"employee_id"`
+	Login      string `json:"login"`
+	RoleCode   string `json:"role_code"`
 }

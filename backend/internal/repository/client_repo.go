@@ -73,7 +73,7 @@ func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRe
 		INSERT INTO clients (client_type, phone, email)
 		VALUES ($1, $2, $3)
 		RETURNING id, client_type, phone, email, created_at
-	`, dto.ClientType, dto.Phone, dto.Email,
+	`, dto.ClientType, dto.Phone, nullifyEmpty(dto.Email),
 	).Scan(&c.ID, &c.ClientType, &c.Phone, &c.Email, &c.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("Create insert client: %w", err)
@@ -84,7 +84,7 @@ func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRe
 		_, err = tx.Exec(ctx, `
 			INSERT INTO individuals (client_id, last_name, first_name, middle_name)
 			VALUES ($1, $2, $3, $4)
-		`, c.ID, dto.LastName, dto.FirstName, dto.MiddleName)
+		`, c.ID, dto.LastName, dto.FirstName, nullifyEmpty(dto.MiddleName))
 		if err != nil {
 			return nil, fmt.Errorf("Create insert individual: %w", err)
 		}

@@ -22,15 +22,17 @@ func main() {
 	log.Println("подключение к БД успешно")
 
 	// репозитории
-	clientRepo  := repository.NewClientRepository(pool)
+	clientRepo := repository.NewClientRepository(pool)
 	requestRepo := repository.NewRequestRepository(pool)
+	employeeRepo := repository.NewEmployeeRepository(pool)
 
 	// хендлеры
-	clientHandler  := handler.NewClientHandler(clientRepo)
+	clientHandler := handler.NewClientHandler(clientRepo)
 	requestHandler := handler.NewRequestHandler(requestRepo)
+	authHandler := handler.NewAuthHandler(employeeRepo, cfg.JWTSecret)
 
 	// роутер
-	r := router.Setup(clientHandler, requestHandler)
+	r := router.Setup(clientHandler, requestHandler, authHandler, cfg.JWTSecret)
 
 	log.Printf("сервер запущен на порту %s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {

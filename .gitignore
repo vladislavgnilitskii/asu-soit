@@ -28,3 +28,6 @@ docs/.obsidian/plugins/
 # Логи
 *.log
 logs/
+
+
+AGENTS.md
