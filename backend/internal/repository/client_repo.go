@@ -79,8 +79,9 @@ func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRe
 		return nil, fmt.Errorf("Create insert client: %w", err)
 	}
 
-	// если физлицо — дополнительно пишем в individuals
-	if dto.ClientType == domain.ClientIndividual {
+	// дополнительно пишем в таблицу подтипа
+	switch dto.ClientType {
+	case domain.ClientIndividual:
 		_, err = tx.Exec(ctx, `
 			INSERT INTO individuals (client_id, last_name, first_name, middle_name)
 			VALUES ($1, $2, $3, $4)
@@ -88,10 +89,46 @@ func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRe
 		if err != nil {
 			return nil, fmt.Errorf("Create insert individual: %w", err)
 		}
+	case domain.ClientOrganization:
+		_, err = tx.Exec(ctx, `
+			INSERT INTO organizations (client_id, name, inn, kpp, contact_person)
+			VALUES ($1, $2, $3, $4, $5)
+		`, c.ID, dto.Name, dto.INN, nullifyEmpty(dto.KPP), nullifyEmpty(dto.ContactPerson))
+		if err != nil {
+			return nil, fmt.Errorf("Create insert organization: %w", err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("Create commit: %w", err)
 	}
 	return &c, nil
+}
+
+// GetIndividual — данные физлица по client_id
+func (r *ClientRepository) GetIndividual(ctx context.Context, clientID string) (*domain.Individual, error) {
+	var ind domain.Individual
+	err := r.db.QueryRow(ctx, `
+		SELECT id, client_id, last_name, first_name, middle_name
+		FROM individuals
+		WHERE client_id = $1
+	`, clientID).Scan(&ind.ID, &ind.ClientID, &ind.LastName, &ind.FirstName, &ind.MiddleName)
+	if err != nil {
+		return nil, fmt.Errorf("GetIndividual: %w", err)
+	}
+	return &ind, nil
+}
+
+// GetOrganization — данные организации по client_id
+func (r *ClientRepository) GetOrganization(ctx context.Context, clientID string) (*domain.Organization, error) {
+	var org domain.Organization
+	err := r.db.QueryRow(ctx, `
+		SELECT id, client_id, name, inn, kpp, contact_person
+		FROM organizations
+		WHERE client_id = $1
+	`, clientID).Scan(&org.ID, &org.ClientID, &org.Name, &org.INN, &org.KPP, &org.ContactPerson)
+	if err != nil {
+		return nil, fmt.Errorf("GetOrganization: %w", err)
+	}
+	return &org, nil
 }

@@ -25,13 +25,39 @@ type Individual struct {
 	MiddleName *string `json:"middle_name,omitempty"` // nullable в БД — указатель
 }
 
+type Organization struct {
+	ID            string  `json:"id"`
+	ClientID      string  `json:"client_id"`
+	Name          string  `json:"name"`
+	INN           string  `json:"inn"`
+	KPP           *string `json:"kpp,omitempty"`            // nullable
+	ContactPerson *string `json:"contact_person,omitempty"` // nullable
+}
+
+// ClientDetails — клиент вместе с данными его подтипа.
+// Заполнено ровно одно из полей Individual/Organization — в зависимости
+// от client_type. Используется в ответе GET /clients/:id.
+type ClientDetails struct {
+	Client
+	Individual   *Individual   `json:"individual,omitempty"`
+	Organization *Organization `json:"organization,omitempty"`
+}
+
 type CreateClientRequest struct {
 	ClientType ClientType `json:"client_type" binding:"required"`
 	Phone      string     `json:"phone"       binding:"required"`
 	Email      string     `json:"email"`
-	LastName   string     `json:"last_name"`
-	FirstName  string     `json:"first_name"`
-	MiddleName string     `json:"middle_name"`
+
+	// поля физлица (client_type = individual)
+	LastName   string `json:"last_name"`
+	FirstName  string `json:"first_name"`
+	MiddleName string `json:"middle_name"`
+
+	// поля организации (client_type = organization)
+	Name          string `json:"name"`
+	INN           string `json:"inn"`
+	KPP           string `json:"kpp"`
+	ContactPerson string `json:"contact_person"`
 }
 
 type RepairRequest struct {
@@ -90,4 +116,31 @@ type Claims struct {
 	EmployeeID string `json:"employee_id"`
 	Login      string `json:"login"`
 	RoleCode   string `json:"role_code"`
+}
+
+// DeviceType — справочник типов устройств (ноутбук, телефон, ...)
+type DeviceType struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// Device — устройство клиента, принятое в ремонт
+type Device struct {
+	ID             string    `json:"id"`
+	ClientID       string    `json:"client_id"`
+	DeviceTypeID   string    `json:"device_type_id"`
+	Brand          string    `json:"brand"`
+	Model          string    `json:"model"`
+	SerialNumber   *string   `json:"serial_number,omitempty"`   // nullable
+	AppearanceNote *string   `json:"appearance_note,omitempty"` // nullable
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+type CreateDeviceDTO struct {
+	ClientID       string `json:"client_id"      binding:"required"`
+	DeviceTypeID   string `json:"device_type_id" binding:"required"`
+	Brand          string `json:"brand"          binding:"required"`
+	Model          string `json:"model"          binding:"required"`
+	SerialNumber   string `json:"serial_number"`
+	AppearanceNote string `json:"appearance_note"`
 }

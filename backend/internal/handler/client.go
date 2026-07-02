@@ -30,9 +30,12 @@ func (h *ClientHandler) GetAll(c *gin.Context) {
 }
 
 // GetByID — обработчик GET /api/v1/clients/:id
+// возвращает клиента вместе с данными его подтипа (individual/organization)
 func (h *ClientHandler) GetByID(c *gin.Context) {
+	ctx := c.Request.Context()
 	id := c.Param("id")
-	client, err := h.repo.GetByID(c.Request.Context(), id)
+
+	client, err := h.repo.GetByID(ctx, id)
 	if err != nil {
 		// отличаем «не найдено» от реального сбоя БД
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -42,7 +45,26 @@ func (h *ClientHandler) GetByID(c *gin.Context) {
 		respondInternal(c, "ClientHandler.GetByID", err)
 		return
 	}
-	respondOK(c, client)
+
+	details := domain.ClientDetails{Client: *client}
+	switch client.ClientType {
+	case domain.ClientIndividual:
+		ind, err := h.repo.GetIndividual(ctx, id)
+		if err != nil {
+			respondInternal(c, "ClientHandler.GetByID individual", err)
+			return
+		}
+		details.Individual = ind
+	case domain.ClientOrganization:
+		org, err := h.repo.GetOrganization(ctx, id)
+		if err != nil {
+			respondInternal(c, "ClientHandler.GetByID organization", err)
+			return
+		}
+		details.Organization = org
+	}
+
+	respondOK(c, details)
 }
 
 // Create — обработчик POST /api/v1/clients
@@ -53,10 +75,9 @@ func (h *ClientHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Пока поддерживаются только физлица. Для организаций нужны свои
-	// поля (name/inn/kpp) и запись в таблицу organizations — это отдельная
-	// задача. Раньше код молча создавал clients-запись без organizations
-	// (orphan). Теперь честно отклоняем, не портя данные.
+	// поля обязательные для подтипа проверяем вручную: в одном DTO
+	// сосуществуют поля физлица и организации, поэтому binding:"required"
+	// на них навесить нельзя.
 	switch dto.ClientType {
 	case domain.ClientIndividual:
 		if dto.LastName == "" || dto.FirstName == "" {
@@ -64,8 +85,10 @@ func (h *ClientHandler) Create(c *gin.Context) {
 			return
 		}
 	case domain.ClientOrganization:
-		respondError(c, http.StatusNotImplemented, "создание клиентов-организаций пока не реализовано")
-		return
+		if dto.Name == "" || dto.INN == "" {
+			respondError(c, http.StatusBadRequest, "для организации обязательны name и inn")
+			return
+		}
 	default:
 		respondError(c, http.StatusBadRequest, "неизвестный client_type")
 		return

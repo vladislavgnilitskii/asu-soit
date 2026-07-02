@@ -24,15 +24,17 @@ func main() {
 	// репозитории
 	clientRepo := repository.NewClientRepository(pool)
 	requestRepo := repository.NewRequestRepository(pool)
+	deviceRepo := repository.NewDeviceRepository(pool)
 	employeeRepo := repository.NewEmployeeRepository(pool)
 
 	// хендлеры
 	clientHandler := handler.NewClientHandler(clientRepo)
 	requestHandler := handler.NewRequestHandler(requestRepo)
+	deviceHandler := handler.NewDeviceHandler(deviceRepo)
 	authHandler := handler.NewAuthHandler(employeeRepo, cfg.JWTSecret)
 
 	// роутер
-	r := router.Setup(clientHandler, requestHandler, authHandler, cfg.JWTSecret)
+	r := router.Setup(clientHandler, requestHandler, deviceHandler, authHandler, cfg.JWTSecret)
 
 	log.Printf("сервер запущен на порту %s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {

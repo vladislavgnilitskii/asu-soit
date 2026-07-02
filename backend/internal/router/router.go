@@ -9,6 +9,7 @@ import (
 func Setup(
 	clientHandler *handler.ClientHandler,
 	requestHandler *handler.RequestHandler,
+	deviceHandler *handler.DeviceHandler,
 	authHandler *handler.AuthHandler,
 	jwtSecret string,
 ) *gin.Engine {
@@ -40,6 +41,17 @@ func Setup(
 				// менять статус — те, кто ведёт ремонт
 				requests.PATCH("/:id/status", auth.RequireRole("admin", "manager", "engineer"), requestHandler.UpdateStatus)
 			}
+
+			devices := protected.Group("/devices")
+			{
+				devices.GET("", deviceHandler.GetAll)
+				devices.GET("/:id", deviceHandler.GetByID)
+				// регистрировать устройства — admin и manager (приёмка)
+				devices.POST("", auth.RequireRole("admin", "manager"), deviceHandler.Create)
+			}
+
+			// справочник типов устройств — нужен для формы создания устройства
+			protected.GET("/device-types", deviceHandler.ListTypes)
 		}
 	}
 
