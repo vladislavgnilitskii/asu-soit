@@ -180,3 +180,61 @@ type CreateDeviceDTO struct {
 	SerialNumber   string `json:"serial_number"`
 	AppearanceNote string `json:"appearance_note"`
 }
+
+// PartCategory — справочник категорий запчастей
+type PartCategory struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// SparePart — запчасть на складе
+type SparePart struct {
+	ID              string    `json:"id"`
+	CategoryID      string    `json:"category_id"`
+	Name            string    `json:"name"`
+	SKU             *string   `json:"sku,omitempty"` // nullable, артикул
+	PurchasePrice   float64   `json:"purchase_price"`
+	SalePrice       float64   `json:"sale_price"`
+	QuantityInStock int       `json:"quantity_in_stock"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+type CreateSparePartDTO struct {
+	CategoryID    string  `json:"category_id"    binding:"required"`
+	Name          string  `json:"name"            binding:"required"`
+	SKU           string  `json:"sku"`
+	PurchasePrice float64 `json:"purchase_price"  binding:"required"`
+	SalePrice     float64 `json:"sale_price"      binding:"required"`
+}
+
+// ReceivePartsDTO — приход детали от поставщика (увеличивает остаток)
+type ReceivePartsDTO struct {
+	Quantity      int     `json:"quantity"       binding:"required,gt=0"`
+	UnitPrice     float64 `json:"unit_price"     binding:"required"`
+	InvoiceNumber string  `json:"invoice_number"`
+	Note          string  `json:"note"`
+}
+
+// WriteOffPartsDTO — списание детали (порча/недостача), без привязки к заявке
+type WriteOffPartsDTO struct {
+	Quantity int    `json:"quantity" binding:"required,gt=0"`
+	Note     string `json:"note"`
+}
+
+// IssuePartToRequestDTO — выдать деталь со склада в конкретную заявку.
+// Цену клиенту (unit_price) сервер берёт сам из SparePart.SalePrice —
+// не принимает от вызывающего, чтобы никто не мог занизить цену в счёте.
+type IssuePartToRequestDTO struct {
+	PartID   string `json:"part_id"  binding:"required"`
+	Quantity int    `json:"quantity" binding:"required,gt=0"`
+}
+
+// RequestPartEntry — деталь, списанная на заявку (для чтения).
+// Обогащена названием детали — аналогично StatusHistoryEntry.
+type RequestPartEntry struct {
+	ID        string  `json:"id"`
+	PartID    string  `json:"part_id"`
+	PartName  string  `json:"part_name"`
+	Quantity  int     `json:"quantity"`
+	UnitPrice float64 `json:"unit_price"`
+}

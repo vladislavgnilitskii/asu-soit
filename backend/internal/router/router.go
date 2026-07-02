@@ -10,6 +10,7 @@ func Setup(
 	clientHandler *handler.ClientHandler,
 	requestHandler *handler.RequestHandler,
 	deviceHandler *handler.DeviceHandler,
+	warehouseHandler *handler.WarehouseHandler,
 	authHandler *handler.AuthHandler,
 	jwtSecret string,
 ) *gin.Engine {
@@ -45,6 +46,12 @@ func Setup(
 				// назначение исполнителя и закрытие — приёмка/менеджмент
 				requests.PATCH("/:id/assign", auth.RequireRole("admin", "manager"), requestHandler.Assign)
 				requests.PATCH("/:id/close", auth.RequireRole("admin", "manager"), requestHandler.Close)
+
+				// детали, списанные на заявку
+				requests.GET("/:id/parts", warehouseHandler.GetRequestParts)
+				// выдать деталь в ремонт — кладовщик физически выдаёт,
+				// инженер может списать то, что сам поставил в ремонт
+				requests.POST("/:id/parts", auth.RequireRole("admin", "storekeeper", "engineer"), warehouseHandler.IssueToRequest)
 			}
 
 			devices := protected.Group("/devices")
@@ -57,6 +64,19 @@ func Setup(
 
 			// справочник типов устройств — нужен для формы создания устройства
 			protected.GET("/device-types", deviceHandler.ListTypes)
+
+			spareParts := protected.Group("/spare-parts")
+			{
+				spareParts.GET("", warehouseHandler.GetAllParts)
+				spareParts.GET("/:id", warehouseHandler.GetPartByID)
+				// заводить новые позиции каталога и вести приход/списание — склад
+				spareParts.POST("", auth.RequireRole("admin", "storekeeper"), warehouseHandler.CreatePart)
+				spareParts.POST("/:id/receive", auth.RequireRole("admin", "storekeeper"), warehouseHandler.Receive)
+				spareParts.POST("/:id/writeoff", auth.RequireRole("admin", "storekeeper"), warehouseHandler.WriteOff)
+			}
+
+			// справочник категорий запчастей
+			protected.GET("/part-categories", warehouseHandler.ListCategories)
 		}
 	}
 
