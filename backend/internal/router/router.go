@@ -36,10 +36,15 @@ func Setup(
 			{
 				requests.GET("", requestHandler.GetAll)
 				requests.GET("/:id", requestHandler.GetByID)
+				requests.GET("/:id/history", requestHandler.History)
 				// создавать заявки — admin и manager (приёмка)
 				requests.POST("", auth.RequireRole("admin", "manager"), requestHandler.Create)
-				// менять статус — те, кто ведёт ремонт
+				// менять статус и вести диагностику — те, кто ведёт ремонт
 				requests.PATCH("/:id/status", auth.RequireRole("admin", "manager", "engineer"), requestHandler.UpdateStatus)
+				requests.PATCH("/:id", auth.RequireRole("admin", "manager", "engineer"), requestHandler.UpdateDetails)
+				// назначение исполнителя и закрытие — приёмка/менеджмент
+				requests.PATCH("/:id/assign", auth.RequireRole("admin", "manager"), requestHandler.Assign)
+				requests.PATCH("/:id/close", auth.RequireRole("admin", "manager"), requestHandler.Close)
 			}
 
 			devices := protected.Group("/devices")

@@ -87,6 +87,42 @@ type UpdateRequestStatusDTO struct {
 	Comment  string `json:"comment"`
 }
 
+// AssignRequestDTO — назначение исполнителя на заявку
+type AssignRequestDTO struct {
+	AssignedTo string `json:"assigned_to" binding:"required"`
+}
+
+// UpdateRequestDTO — частичное обновление диагностики и стоимости.
+// Поля-указатели: nil означает «не менять», непустое — новое значение.
+type UpdateRequestDTO struct {
+	DiagnosticResult *string  `json:"diagnostic_result"`
+	EstimatedCost    *float64 `json:"estimated_cost"`
+	FinalCost        *float64 `json:"final_cost"`
+}
+
+// IsEmpty — не передано ни одного поля для обновления
+func (d UpdateRequestDTO) IsEmpty() bool {
+	return d.DiagnosticResult == nil && d.EstimatedCost == nil && d.FinalCost == nil
+}
+
+// CloseRequestDTO — закрытие заявки (комментарий необязателен)
+type CloseRequestDTO struct {
+	Comment string `json:"comment"`
+}
+
+// StatusHistoryEntry — запись истории смены статуса (для чтения).
+// Обогащена кодом/названием статуса и именем сотрудника.
+type StatusHistoryEntry struct {
+	ID            string    `json:"id"`
+	StatusID      string    `json:"status_id"`
+	StatusCode    string    `json:"status_code"`
+	StatusName    string    `json:"status_name"`
+	ChangedBy     string    `json:"changed_by"`
+	ChangedByName string    `json:"changed_by_name"`
+	ChangedAt     time.Time `json:"changed_at"`
+	Comment       *string   `json:"comment,omitempty"`
+}
+
 // Employee — сотрудник
 type Employee struct {
 	ID           string `json:"id"`
