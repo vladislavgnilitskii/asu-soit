@@ -12,6 +12,7 @@ func Setup(
 	deviceHandler *handler.DeviceHandler,
 	warehouseHandler *handler.WarehouseHandler,
 	invoiceHandler *handler.InvoiceHandler,
+	employeeHandler *handler.EmployeeHandler,
 	authHandler *handler.AuthHandler,
 	jwtSecret string,
 ) *gin.Engine {
@@ -88,6 +89,16 @@ func Setup(
 				invoices.GET("/:id", invoiceHandler.GetByID)
 				// менять статус счёта (оплачен/отменён) — бухгалтерия
 				invoices.PATCH("/:id/status", auth.RequireRole("admin", "accountant"), invoiceHandler.UpdateStatus)
+			}
+
+			// управление учётными записями сотрудников — только администратор
+			employees := protected.Group("/employees")
+			employees.Use(auth.RequireRole("admin"))
+			{
+				employees.GET("", employeeHandler.GetAll)
+				employees.GET("/:id", employeeHandler.GetByID)
+				employees.POST("", employeeHandler.Create)
+				employees.PATCH("/:id", employeeHandler.Update)
 			}
 		}
 	}

@@ -135,6 +135,28 @@ type Employee struct {
 	IsActive     bool   `json:"is_active"`
 }
 
+// CreateEmployeeDTO — данные для заведения нового сотрудника.
+// Password приходит в открытом виде и хешируется в хендлере (bcrypt) —
+// в БД уходит только хеш, plain-пароль нигде не хранится.
+type CreateEmployeeDTO struct {
+	RoleID     string `json:"role_id"     binding:"required"`
+	LastName   string `json:"last_name"   binding:"required"`
+	FirstName  string `json:"first_name"  binding:"required"`
+	MiddleName string `json:"middle_name"`
+	Login      string `json:"login"       binding:"required"`
+	Password   string `json:"password"    binding:"required,min=6"`
+}
+
+// UpdateEmployeeDTO — частичное обновление профиля/роли/активности.
+// Указатели: nil = «не менять». Пароль здесь не меняется (отдельная задача).
+type UpdateEmployeeDTO struct {
+	RoleID     *string `json:"role_id"`
+	LastName   *string `json:"last_name"`
+	FirstName  *string `json:"first_name"`
+	MiddleName *string `json:"middle_name"`
+	IsActive   *bool   `json:"is_active"`
+}
+
 // LoginRequest — данные для входа
 type LoginRequest struct {
 	Login    string `json:"login"    binding:"required"`

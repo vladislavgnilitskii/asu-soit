@@ -35,10 +35,11 @@ func main() {
 	deviceHandler := handler.NewDeviceHandler(deviceRepo)
 	warehouseHandler := handler.NewWarehouseHandler(warehouseRepo)
 	invoiceHandler := handler.NewInvoiceHandler(invoiceRepo)
+	employeeHandler := handler.NewEmployeeHandler(employeeRepo)
 	authHandler := handler.NewAuthHandler(employeeRepo, cfg.JWTSecret)
 
 	// роутер
-	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, authHandler, cfg.JWTSecret)
+	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, employeeHandler, authHandler, cfg.JWTSecret)
 
 	log.Printf("сервер запущен на порту %s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {

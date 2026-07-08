@@ -24,4 +24,11 @@ var (
 	ErrInvoiceExists     = errors.New("по заявке счет уже выставлен")
 	ErrRequestNotClosed  = errors.New("нельзя выставить счет по незакрытой заявке")
 	ErrInvoiceNotPending = errors.New("нельзя менять статус счета, который уже не в статусе pending")
+
+	// ErrEmployeeNotFound — сотрудник с указанным id не существует.
+	ErrEmployeeNotFound = errors.New("сотрудник не найден")
+	// ErrLoginTaken — логин уже занят (нарушение UNIQUE на employees.login).
+	ErrLoginTaken = errors.New("логин уже занят")
+	// ErrRoleNotFound — передан несуществующий role_id.
+	ErrRoleNotFound = errors.New("роль не найдена")
 )
