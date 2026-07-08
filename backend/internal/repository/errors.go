@@ -19,4 +19,9 @@ var (
 	// ErrAlreadyIssued — эта деталь уже списана на данную заявку
 	// (нарушение uq_request_parts на стороне БД).
 	ErrAlreadyIssued = errors.New("деталь уже списана на эту заявку")
+
+	ErrInvoiceNotFound   = errors.New("счет не найден")
+	ErrInvoiceExists     = errors.New("по заявке счет уже выставлен")
+	ErrRequestNotClosed  = errors.New("нельзя выставить счет по незакрытой заявке")
+	ErrInvoiceNotPending = errors.New("нельзя менять статус счета, который уже не в статусе pending")
 )

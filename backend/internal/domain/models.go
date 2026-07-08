@@ -238,3 +238,21 @@ type RequestPartEntry struct {
 	Quantity  int     `json:"quantity"`
 	UnitPrice float64 `json:"unit_price"`
 }
+
+type Invoice struct {
+	ID          string    `json:"id"`
+	RequestID   string    `json:"request_id"`
+	TotalAmount float64   `json:"total_amount"`
+	Status      string    `json:"status"`
+	IssuedAt    time.Time `json:"issued_at"`
+}
+
+const (
+	InvoicePending   = "pending"
+	InvoicePaid      = "paid"
+	InvoiceCancelled = "cancelled"
+)
+
+type UpdateInvoiceStatusDTO struct {
+	Status string `json:"status" binding:"required"`
+}

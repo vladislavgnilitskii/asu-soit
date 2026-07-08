@@ -11,6 +11,7 @@ func Setup(
 	requestHandler *handler.RequestHandler,
 	deviceHandler *handler.DeviceHandler,
 	warehouseHandler *handler.WarehouseHandler,
+	invoiceHandler *handler.InvoiceHandler,
 	authHandler *handler.AuthHandler,
 	jwtSecret string,
 ) *gin.Engine {
@@ -52,6 +53,10 @@ func Setup(
 				// выдать деталь в ремонт — кладовщик физически выдаёт,
 				// инженер может списать то, что сам поставил в ремонт
 				requests.POST("/:id/parts", auth.RequireRole("admin", "storekeeper", "engineer"), warehouseHandler.IssueToRequest)
+
+				// счёт заявки: смотреть может любой, выставлять — бухгалтерия
+				requests.GET("/:id/invoice", invoiceHandler.GetByRequestID)
+				requests.POST("/:id/invoice", auth.RequireRole("admin", "accountant"), invoiceHandler.CreateForRequest)
 			}
 
 			devices := protected.Group("/devices")
@@ -77,6 +82,13 @@ func Setup(
 
 			// справочник категорий запчастей
 			protected.GET("/part-categories", warehouseHandler.ListCategories)
+
+			invoices := protected.Group("/invoices")
+			{
+				invoices.GET("/:id", invoiceHandler.GetByID)
+				// менять статус счёта (оплачен/отменён) — бухгалтерия
+				invoices.PATCH("/:id/status", auth.RequireRole("admin", "accountant"), invoiceHandler.UpdateStatus)
+			}
 		}
 	}
 

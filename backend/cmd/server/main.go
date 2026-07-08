@@ -26,6 +26,7 @@ func main() {
 	requestRepo := repository.NewRequestRepository(pool)
 	deviceRepo := repository.NewDeviceRepository(pool)
 	warehouseRepo := repository.NewWarehouseRepository(pool)
+	invoiceRepo := repository.NewInvoiceRepository(pool)
 	employeeRepo := repository.NewEmployeeRepository(pool)
 
 	// хендлеры
@@ -33,10 +34,11 @@ func main() {
 	requestHandler := handler.NewRequestHandler(requestRepo)
 	deviceHandler := handler.NewDeviceHandler(deviceRepo)
 	warehouseHandler := handler.NewWarehouseHandler(warehouseRepo)
+	invoiceHandler := handler.NewInvoiceHandler(invoiceRepo)
 	authHandler := handler.NewAuthHandler(employeeRepo, cfg.JWTSecret)
 
 	// роутер
-	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, authHandler, cfg.JWTSecret)
+	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, authHandler, cfg.JWTSecret)
 
 	log.Printf("сервер запущен на порту %s", cfg.AppPort)
 	if err := r.Run(":" + cfg.AppPort); err != nil {
