@@ -62,7 +62,6 @@ type CreateClientRequest struct {
 
 type RepairRequest struct {
 	ID                 string     `json:"id"`
-	ClientID           string     `json:"client_id"`
 	DeviceID           string     `json:"device_id"`
 	AssignedTo         *string    `json:"assigned_to,omitempty"`
 	StatusID           string     `json:"status_id"`
@@ -76,7 +75,7 @@ type RepairRequest struct {
 }
 
 type CreateRepairRequestDTO struct {
-	ClientID           string     `json:"client_id"           binding:"required"`
+	// клиент не передаётся: он определяется по устройству (device → client)
 	DeviceID           string     `json:"device_id"           binding:"required"`
 	ProblemDescription string     `json:"problem_description" binding:"required"`
 	PlannedDeadline    *time.Time `json:"planned_deadline"`

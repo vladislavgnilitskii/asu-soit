@@ -21,7 +21,7 @@ func NewRequestRepository(db *pgxpool.Pool) *RequestRepository {
 // GetAll — все заявки
 func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest, error) {
 	rows, err := r.db.Query(ctx, `
-		SELECT id, client_id, device_id, assigned_to, status_id,
+		SELECT id, device_id, assigned_to, status_id,
 		       problem_description, diagnostic_result,
 		       estimated_cost, final_cost,
 		       planned_deadline, created_at, closed_at
@@ -37,7 +37,7 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 	for rows.Next() {
 		var req domain.RepairRequest
 		err := rows.Scan(
-			&req.ID, &req.ClientID, &req.DeviceID, &req.AssignedTo,
+			&req.ID, &req.DeviceID, &req.AssignedTo,
 			&req.StatusID, &req.ProblemDescription, &req.DiagnosticResult,
 			&req.EstimatedCost, &req.FinalCost,
 			&req.PlannedDeadline, &req.CreatedAt, &req.ClosedAt,
@@ -54,14 +54,14 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 func (r *RequestRepository) GetByID(ctx context.Context, id string) (*domain.RepairRequest, error) {
 	var req domain.RepairRequest
 	err := r.db.QueryRow(ctx, `
-		SELECT id, client_id, device_id, assigned_to, status_id,
+		SELECT id, device_id, assigned_to, status_id,
 		       problem_description, diagnostic_result,
 		       estimated_cost, final_cost,
 		       planned_deadline, created_at, closed_at
 		FROM repair_requests
 		WHERE id = $1
 	`, id).Scan(
-		&req.ID, &req.ClientID, &req.DeviceID, &req.AssignedTo,
+		&req.ID, &req.DeviceID, &req.AssignedTo,
 		&req.StatusID, &req.ProblemDescription, &req.DiagnosticResult,
 		&req.EstimatedCost, &req.FinalCost,
 		&req.PlannedDeadline, &req.CreatedAt, &req.ClosedAt,
@@ -78,19 +78,19 @@ func (r *RequestRepository) Create(ctx context.Context, dto domain.CreateRepairR
 	var req domain.RepairRequest
 	err := r.db.QueryRow(ctx, `
 		INSERT INTO repair_requests
-		    (client_id, device_id, status_id, problem_description, planned_deadline)
+		    (device_id, status_id, problem_description, planned_deadline)
 		VALUES (
-		    $1, $2,
+		    $1,
 		    (SELECT id FROM request_statuses WHERE code = 'new'),
-		    $3, $4
+		    $2, $3
 		)
-		RETURNING id, client_id, device_id, assigned_to, status_id,
+		RETURNING id, device_id, assigned_to, status_id,
 		          problem_description, diagnostic_result,
 		          estimated_cost, final_cost,
 		          planned_deadline, created_at, closed_at
-	`, dto.ClientID, dto.DeviceID, dto.ProblemDescription, dto.PlannedDeadline,
+	`, dto.DeviceID, dto.ProblemDescription, dto.PlannedDeadline,
 	).Scan(
-		&req.ID, &req.ClientID, &req.DeviceID, &req.AssignedTo,
+		&req.ID, &req.DeviceID, &req.AssignedTo,
 		&req.StatusID, &req.ProblemDescription, &req.DiagnosticResult,
 		&req.EstimatedCost, &req.FinalCost,
 		&req.PlannedDeadline, &req.CreatedAt, &req.ClosedAt,
@@ -170,13 +170,13 @@ func (r *RequestRepository) UpdateDetails(ctx context.Context, id string, dto do
 		    final_cost        = COALESCE($3, final_cost),
 		    updated_at        = now()
 		WHERE id = $4
-		RETURNING id, client_id, device_id, assigned_to, status_id,
+		RETURNING id, device_id, assigned_to, status_id,
 		          problem_description, diagnostic_result,
 		          estimated_cost, final_cost,
 		          planned_deadline, created_at, closed_at
 	`, dto.DiagnosticResult, dto.EstimatedCost, dto.FinalCost, id,
 	).Scan(
-		&req.ID, &req.ClientID, &req.DeviceID, &req.AssignedTo,
+		&req.ID, &req.DeviceID, &req.AssignedTo,
 		&req.StatusID, &req.ProblemDescription, &req.DiagnosticResult,
 		&req.EstimatedCost, &req.FinalCost,
 		&req.PlannedDeadline, &req.CreatedAt, &req.ClosedAt,
