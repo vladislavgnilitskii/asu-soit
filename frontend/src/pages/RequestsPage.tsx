@@ -7,6 +7,7 @@ import { formatDate, formatMoney } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { CreateRequestDialog } from "@/components/forms/CreateRequestDialog"
 import { RequestStatusSelect } from "@/components/forms/RequestStatusSelect"
+import { TableSkeleton } from "@/components/TableSkeleton"
 import {
   Table,
   TableBody,
@@ -49,9 +50,7 @@ export function RequestsPage() {
         {canCreate && <CreateRequestDialog />}
       </div>
 
-      {requests.isLoading && (
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
-      )}
+      {requests.isLoading && <TableSkeleton columns={5} />}
       {requests.isError && (
         <p className="text-sm text-destructive">
           Не удалось загрузить заявки: {(requests.error as Error).message}

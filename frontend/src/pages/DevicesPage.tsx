@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/TableSkeleton"
 
 export function DevicesPage() {
   const { user } = useAuth()
@@ -41,9 +42,7 @@ export function DevicesPage() {
         {canCreate && <CreateDeviceDialog />}
       </div>
 
-      {devices.isLoading && (
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
-      )}
+      {devices.isLoading && <TableSkeleton columns={6} />}
       {devices.isError && (
         <p className="text-sm text-destructive">
           Не удалось загрузить устройства: {(devices.error as Error).message}

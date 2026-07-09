@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
+import { Loader2, Wrench } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { ApiError } from "@/lib/api"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,9 +41,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
+    <div className="relative min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-accent/40">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-sm animate-fade-in shadow-lg">
+        <CardHeader className="items-center text-center">
+          <span className="mb-2 flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Wrench className="size-5.5" />
+          </span>
           <CardTitle>Вход в систему</CardTitle>
           <CardDescription>АСУ СОИТ «ТехноСервис»</CardDescription>
         </CardHeader>
@@ -69,6 +77,7 @@ export function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
               {loading ? "Вход…" : "Войти"}
             </Button>
           </form>

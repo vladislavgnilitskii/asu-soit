@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/TableSkeleton"
 
 export function EmployeesPage() {
   const queryClient = useQueryClient()
@@ -69,9 +70,7 @@ export function EmployeesPage() {
         <CreateEmployeeDialog roles={roles.data ?? []} />
       </div>
 
-      {employees.isLoading && (
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
-      )}
+      {employees.isLoading && <TableSkeleton columns={6} />}
       {employees.isError && (
         <p className="text-sm text-destructive">
           Не удалось загрузить сотрудников: {(employees.error as Error).message}

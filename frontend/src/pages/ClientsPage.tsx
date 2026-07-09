@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/TableSkeleton"
 
 export function ClientsPage() {
   const clients = useQuery({
@@ -31,9 +32,7 @@ export function ClientsPage() {
         <CreateClientDialog />
       </div>
 
-      {clients.isLoading && (
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
-      )}
+      {clients.isLoading && <TableSkeleton columns={5} />}
       {clients.isError && (
         <p className="text-sm text-destructive">
           Не удалось загрузить клиентов: {(clients.error as Error).message}

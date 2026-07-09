@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/TableSkeleton"
 
 export function WarehousePage() {
   const { user } = useAuth()
@@ -65,9 +66,7 @@ export function WarehousePage() {
         {canWrite && <CreatePartDialog categories={categories.data ?? []} />}
       </div>
 
-      {parts.isLoading && (
-        <p className="text-sm text-muted-foreground">Загрузка…</p>
-      )}
+      {parts.isLoading && <TableSkeleton columns={8} />}
       {parts.isError && (
         <p className="text-sm text-destructive">
           Не удалось загрузить склад: {(parts.error as Error).message}
