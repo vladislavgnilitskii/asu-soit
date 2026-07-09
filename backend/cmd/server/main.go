@@ -1,7 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/vladislavgnilitskii/asu-soit/internal/config"
 	"github.com/vladislavgnilitskii/asu-soit/internal/db"
@@ -41,8 +48,34 @@ func main() {
 	// роутер
 	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, employeeHandler, authHandler, cfg.JWTSecret, pool)
 
-	log.Printf("сервер запущен на порту %s", cfg.AppPort)
-	if err := r.Run(":" + cfg.AppPort); err != nil {
-		log.Fatalf("ошибка запуска сервера: %v", err)
+	// таймауты защищают от медленных клиентов (Slowloris) и висящих соединений
+	srv := &http.Server{
+		Addr:              ":" + cfg.AppPort,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
+
+	// сервер поднимаем в отдельной горутине, чтобы main мог ждать сигнал
+	go func() {
+		log.Printf("сервер запущен на порту %s", cfg.AppPort)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("ошибка запуска сервера: %v", err)
+		}
+	}()
+
+	// graceful shutdown: по SIGINT/SIGTERM даём активным запросам завершиться
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("останавливаем сервер…")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("некорректная остановка сервера: %v", err)
+	}
+	log.Println("сервер остановлен")
 }

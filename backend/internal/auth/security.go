@@ -24,6 +24,15 @@ func SecurityHeaders() gin.HandlerFunc {
 	}
 }
 
+// BodyLimit ограничивает размер тела запроса, чтобы крупные полезные
+// нагрузки не расходовали память сервера (простая защита от DoS).
+func BodyLimit(maxBytes int64) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		c.Next()
+	}
+}
+
 // LoginRateLimiter — простой ограничитель попыток входа по IP
 // (фиксированное окно). Защищает от перебора паролей. Состояние — в памяти
 // процесса; для одного инстанса достаточно, для кластера нужен общий стор.

@@ -24,6 +24,8 @@ func Setup(
 
 	// заголовки безопасности на все ответы
 	r.Use(auth.SecurityHeaders())
+	// ограничение размера тела запроса — 1 МиБ (защита от крупных payload)
+	r.Use(auth.BodyLimit(1 << 20))
 
 	// защита входа от перебора: не более 10 попыток в минуту с одного IP
 	loginLimiter := auth.NewLoginRateLimiter(10, time.Minute)
