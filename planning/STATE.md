@@ -149,7 +149,7 @@
 - **Audit log** — таблица `audit_log` есть, запись в неё из кода отсутствует.
 - **Тесты** — ни одного `*_test.go`.
 - **Frontend** — начат (`frontend/`): Vite + React + TypeScript + Tailwind v4 + shadcn/ui, TanStack Query, React Router. Реализованы: вход (JWT в localStorage, роль из claims), оболочка с ролевым меню, обзор, список заявок (RLS-aware), список клиентов. Dev-прокси `/api → :8080`. Проверено рантаймом (логин + данные через прокси). Дальше: устройства, склад, счета, сотрудники, формы создания/редактирования.
-- **Инфраструктура** (Docker/K8s/Prometheus/Grafana) — не начата.
+- **Инфраструктура** — начата частично: `docker-compose.yml` (Postgres + backend) + `backend/Dockerfile` (multi-stage, distroless) + `db/seed/dev_seed.sql` для локального стенда одной командой. K8s/Prometheus/Grafana — не начаты. Фронт-сервис в compose пока не добавлен (запускается через `npm run dev`, добавим когда UI устаканится). Не проверено рантаймом: docker-демон в среде разработки недоступен — валиден только синтаксис (`docker compose config`).
 - **Пагинация/фильтрация** списков — `GetAll` возвращает всё без limit/offset.
 - **Update/Delete клиентов и устройств** — не реализованы (есть только create/read).
 - Справочные эндпоинты для фронта добавлены: `GET /request-statuses` (любой авторизованный), `GET /roles` (admin). Примечание: в `roles` есть код `sysadmin` без соответствующей БД-роли — сотрудник с такой ролью не пройдёт `SET ROLE` (латентно, в проде не используется).

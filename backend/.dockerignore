@@ -1,0 +1,6 @@
+# в образ не нужны локальные артефакты и окружение
+*.log
+.env
+.env.*
+Dockerfile
+.dockerignore
