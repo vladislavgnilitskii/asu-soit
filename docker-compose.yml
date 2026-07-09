@@ -8,18 +8,16 @@
 
 services:
   postgres:
-    image: postgres:18-alpine
+    # образ с «запечёнными» миграциями и dev-сидом (см. db/Dockerfile).
+    # Миграции применяются при ПЕРВОЙ инициализации пустой БД (docker compose
+    # down -v для чистого прогона), по порядку имён (001…016), как superuser.
+    build: ./db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: asu_soit
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # миграции применяются при ПЕРВОЙ инициализации пустой БД,
-      # по порядку имён файлов (001…016), как superuser postgres
-      - ./db/migrations:/docker-entrypoint-initdb.d
-      # dev-сид (админ/инженер) — имя сортируется после всех миграций
-      - ./db/seed/dev_seed.sql:/docker-entrypoint-initdb.d/zzz_dev_seed.sql
     ports:
       # 5433 на хосте, чтобы не конфликтовать с локальным postgres на 5432
       - "5433:5432"

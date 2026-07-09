@@ -27,16 +27,9 @@ CREATE TABLE request_status_history (
     comment     text
 );
 
--- Детали использованные в заявке
--- unit_price фиксируется на момент использования — цена может меняться
-CREATE TABLE request_parts (
-    id         uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
-    request_id uuid         NOT NULL REFERENCES repair_requests(id) ON DELETE RESTRICT,
-    part_id    uuid         NOT NULL REFERENCES spare_parts(id)     ON DELETE RESTRICT,
-    quantity   int          NOT NULL CHECK (quantity > 0),
-    unit_price numeric(12,2) NOT NULL CHECK (unit_price >= 0),
-    CONSTRAINT uq_request_parts UNIQUE (request_id, part_id)
-);
+-- Таблица request_parts перенесена в миграцию 006 (после spare_parts):
+-- она ссылается на spare_parts, а stock_movements из 006 ссылается на
+-- repair_requests — циклическая зависимость мешала чистой инициализации с нуля.
 
 CREATE INDEX idx_repair_requests_client    ON repair_requests(client_id);
 CREATE INDEX idx_repair_requests_device    ON repair_requests(device_id);
