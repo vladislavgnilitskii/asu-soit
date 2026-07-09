@@ -77,6 +77,9 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 		}
 		requests = append(requests, req)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetAll requests rows: %w", err)
+	}
 	return requests, nil
 }
 
@@ -288,6 +291,9 @@ func (r *RequestRepository) GetHistory(ctx context.Context, requestID string) ([
 			return nil, fmt.Errorf("GetHistory scan: %w", err)
 		}
 		history = append(history, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetHistory rows: %w", err)
 	}
 	return history, nil
 }

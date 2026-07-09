@@ -48,6 +48,9 @@ func (r *DeviceRepository) GetAll(ctx context.Context) ([]domain.Device, error) 
 		}
 		devices = append(devices, d)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetAll devices rows: %w", err)
+	}
 	return devices, nil
 }
 
@@ -107,6 +110,9 @@ func (r *DeviceRepository) ListTypes(ctx context.Context) ([]domain.DeviceType, 
 			return nil, fmt.Errorf("ListTypes scan: %w", err)
 		}
 		types = append(types, t)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListTypes rows: %w", err)
 	}
 	return types, nil
 }

@@ -42,6 +42,9 @@ func (r *WarehouseRepository) ListCategories(ctx context.Context) ([]domain.Part
 		}
 		categories = append(categories, cat)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListCategories rows: %w", err)
+	}
 	return categories, nil
 }
 
@@ -65,6 +68,9 @@ func (r *WarehouseRepository) GetAllParts(ctx context.Context) ([]domain.SparePa
 			return nil, fmt.Errorf("GetAllParts scan: %w", err)
 		}
 		parts = append(parts, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetAllParts rows: %w", err)
 	}
 	return parts, nil
 }
@@ -305,6 +311,9 @@ func (r *WarehouseRepository) GetRequestParts(ctx context.Context, requestID str
 			return nil, fmt.Errorf("GetRequestParts scan: %w", err)
 		}
 		entries = append(entries, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetRequestParts rows: %w", err)
 	}
 	return entries, nil
 }

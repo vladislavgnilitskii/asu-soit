@@ -165,6 +165,9 @@ func (r *EmployeeRepository) GetAll(ctx context.Context) ([]domain.Employee, err
 		}
 		employees = append(employees, *e)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetAll employees rows: %w", err)
+	}
 	return employees, nil
 }
 

@@ -46,6 +46,9 @@ func (r *ClientRepository) GetAll(ctx context.Context) ([]domain.Client, error) 
 		}
 		clients = append(clients, c)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("GetAll clients rows: %w", err)
+	}
 	return clients, nil
 }
 

@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/vladislavgnilitskii/asu-soit/internal/auth"
@@ -20,10 +22,16 @@ func Setup(
 ) *gin.Engine {
 	r := gin.Default()
 
+	// заголовки безопасности на все ответы
+	r.Use(auth.SecurityHeaders())
+
+	// защита входа от перебора: не более 10 попыток в минуту с одного IP
+	loginLimiter := auth.NewLoginRateLimiter(10, time.Minute)
+
 	api := r.Group("/api/v1")
 	{
-		// публичный маршрут — авторизация
-		api.POST("/auth/login", authHandler.Login)
+		// публичный маршрут — авторизация (под rate-limit)
+		api.POST("/auth/login", loginLimiter.Middleware(), authHandler.Login)
 
 		// защищённые маршруты — нужен валидный токен
 		protected := api.Group("")
