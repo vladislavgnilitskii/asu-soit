@@ -30,13 +30,13 @@ func (r *EmployeeRepository) GetByLogin(ctx context.Context, login string) (*dom
 	var emp domain.Employee
 	var roleCode string
 
+	// Логин идёт до SET ROLE, поэтому запрос выполняет техническая роль
+	// app_backend, у которой нет прямого доступа к employees (там хеши паролей).
+	// Данные для проверки пароля отдаёт SECURITY DEFINER-функция (миграция 015).
 	err := r.q(ctx).QueryRow(ctx, `
-		SELECT e.id, e.role_id, e.last_name, e.first_name,
-		       e.middle_name, e.login, e.password_hash, e.is_active,
-		       ro.code as role_code
-		FROM employees e
-		JOIN roles ro ON ro.id = e.role_id
-		WHERE e.login = $1
+		SELECT id, role_id, last_name, first_name,
+		       middle_name, login, password_hash, is_active, role_code
+		FROM auth_get_credentials($1)
 	`, login).Scan(
 		&emp.ID, &emp.RoleID, &emp.LastName, &emp.FirstName,
 		&emp.MiddleName, &emp.Login, &emp.PasswordHash, &emp.IsActive,

@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-07-09 — Безопасность БД (курсовая), Модуль 5
+
+### D-025. Приложение на непривилегированной роли (SET ROLE per-request)
+Приложение переведено с суперпользователя на логин-роль `app_backend`
+(`LOGIN NOINHERIT NOSUPERUSER`, миграция 015) — член всех `role_*`. Middleware
+`TxPerRequest` на каждый запрос делает `set_config('role', $1, true)`
+(эквивалент `SET ROLE`, параметризуемый, is_local; имя роли — из белого списка в
+коде) + личность. Теперь GRANT (модуль 1) и RLS (модуль 2) применяются к
+приложению: инженер через API видит только свои заявки, `employees`/`audit_log`
+недоступны. **Логин** переведён на `SECURITY DEFINER`-функцию
+`auth_get_credentials` (проверка пароля идёт до `SET ROLE`, под `app_backend`, у
+которой нет прямого доступа к `employees`; функция — только `EXECUTE`,
+`search_path` фиксирован). **RBAC-маршруты ужесточены** под гранты ролей
+(решение пользователя — least privilege, а не расширение грантов): `GET /clients`
+→ admin/manager; `/devices` → +engineer; `/spare-parts` → admin/storekeeper/
+engineer; `/requests/:id/history` → admin/manager/engineer; счета → admin/manager/
+accountant. Проверено рантаймом под `app_backend` (login 401 не 500; RLS для
+инженера; 403 на ужесточённых маршрутах; 404 на чужой строке; аудит с автором).
+Конфигурация: `.env.example` → `DB_USER=app_backend`; миграции/админ — под
+postgres. Пароль роли в миграции — дев-значение, в проде из секрета. Отклонён
+вариант «один общий app-роль + RLS по GUC» как более слабое разделение.
+
+---
+
 ## 2026-07-09 — Безопасность БД (курсовая), проброс личности из JWT
 
 ### D-024. Транзакция-на-запрос + Querier для app.current_employee_id

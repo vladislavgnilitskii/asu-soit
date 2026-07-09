@@ -34,17 +34,21 @@ func Setup(
 		{
 			clients := protected.Group("/clients")
 			{
-				clients.GET("", clientHandler.GetAll)
-				clients.GET("/:id", clientHandler.GetByID)
-				// создавать клиентов могут admin и manager (приёмка)
+				// клиенты содержат PII (individuals/organizations); доступ —
+				// приёмка (admin, manager), у кого есть права на эти таблицы
+				clients.GET("", auth.RequireRole("admin", "manager"), clientHandler.GetAll)
+				clients.GET("/:id", auth.RequireRole("admin", "manager"), clientHandler.GetByID)
 				clients.POST("", auth.RequireRole("admin", "manager"), clientHandler.Create)
 			}
 
 			requests := protected.Group("/requests")
 			{
+				// список/карточку заявок видят все роли; RLS сам покажет
+				// инженеру только его заявки (модуль 2)
 				requests.GET("", requestHandler.GetAll)
 				requests.GET("/:id", requestHandler.GetByID)
-				requests.GET("/:id/history", requestHandler.History)
+				// история статусов — у кого есть SELECT на request_status_history
+				requests.GET("/:id/history", auth.RequireRole("admin", "manager", "engineer"), requestHandler.History)
 				// создавать заявки — admin и manager (приёмка)
 				requests.POST("", auth.RequireRole("admin", "manager"), requestHandler.Create)
 				// менять статус и вести диагностику — те, кто ведёт ремонт
@@ -60,15 +64,16 @@ func Setup(
 				// инженер может списать то, что сам поставил в ремонт
 				requests.POST("/:id/parts", auth.RequireRole("admin", "storekeeper", "engineer"), warehouseHandler.IssueToRequest)
 
-				// счёт заявки: смотреть может любой, выставлять — бухгалтерия
-				requests.GET("/:id/invoice", invoiceHandler.GetByRequestID)
+				// счёт заявки: смотреть — у кого есть SELECT на invoices; выставлять — бухгалтерия
+				requests.GET("/:id/invoice", auth.RequireRole("admin", "manager", "accountant"), invoiceHandler.GetByRequestID)
 				requests.POST("/:id/invoice", auth.RequireRole("admin", "accountant"), invoiceHandler.CreateForRequest)
 			}
 
 			devices := protected.Group("/devices")
 			{
-				devices.GET("", deviceHandler.GetAll)
-				devices.GET("/:id", deviceHandler.GetByID)
+				// устройства видят те, у кого есть SELECT на devices
+				devices.GET("", auth.RequireRole("admin", "manager", "engineer"), deviceHandler.GetAll)
+				devices.GET("/:id", auth.RequireRole("admin", "manager", "engineer"), deviceHandler.GetByID)
 				// регистрировать устройства — admin и manager (приёмка)
 				devices.POST("", auth.RequireRole("admin", "manager"), deviceHandler.Create)
 			}
@@ -78,8 +83,9 @@ func Setup(
 
 			spareParts := protected.Group("/spare-parts")
 			{
-				spareParts.GET("", warehouseHandler.GetAllParts)
-				spareParts.GET("/:id", warehouseHandler.GetPartByID)
+				// склад видят те, у кого есть SELECT на spare_parts
+				spareParts.GET("", auth.RequireRole("admin", "storekeeper", "engineer"), warehouseHandler.GetAllParts)
+				spareParts.GET("/:id", auth.RequireRole("admin", "storekeeper", "engineer"), warehouseHandler.GetPartByID)
 				// заводить новые позиции каталога и вести приход/списание — склад
 				spareParts.POST("", auth.RequireRole("admin", "storekeeper"), warehouseHandler.CreatePart)
 				spareParts.POST("/:id/receive", auth.RequireRole("admin", "storekeeper"), warehouseHandler.Receive)
@@ -91,7 +97,8 @@ func Setup(
 
 			invoices := protected.Group("/invoices")
 			{
-				invoices.GET("/:id", invoiceHandler.GetByID)
+				// счёт видят те, у кого есть SELECT на invoices
+				invoices.GET("/:id", auth.RequireRole("admin", "manager", "accountant"), invoiceHandler.GetByID)
 				// менять статус счёта (оплачен/отменён) — бухгалтерия
 				invoices.PATCH("/:id/status", auth.RequireRole("admin", "accountant"), invoiceHandler.UpdateStatus)
 			}
