@@ -13,6 +13,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Обзор" },
   { to: "/requests", label: "Заявки" },
   { to: "/clients", label: "Клиенты", roles: ["admin", "manager"] },
+  { to: "/devices", label: "Устройства", roles: ["admin", "manager", "engineer"] },
 ]
 
 const ROLE_LABEL: Record<RoleCode, string> = {

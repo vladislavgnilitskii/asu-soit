@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage"
 import { DashboardPage } from "./pages/DashboardPage"
 import { RequestsPage } from "./pages/RequestsPage"
 import { ClientsPage } from "./pages/ClientsPage"
+import { DevicesPage } from "./pages/DevicesPage"
 
 // Пускает дальше только авторизованных, иначе — на страницу входа.
 function ProtectedRoute() {
@@ -22,6 +23,7 @@ function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/requests" element={<RequestsPage />} />
           <Route path="/clients" element={<ClientsPage />} />
+          <Route path="/devices" element={<DevicesPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

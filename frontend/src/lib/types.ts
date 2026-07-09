@@ -60,3 +60,51 @@ export interface Role {
   code: string
   name: string
 }
+
+export interface DeviceType {
+  id: string
+  name: string
+}
+
+export interface Device {
+  id: string
+  client_id: string
+  device_type_id: string
+  brand: string
+  model: string
+  serial_number?: string | null
+  appearance_note?: string | null
+  created_at: string
+}
+
+// --- DTO создания (зеркало binding-структур бэка) ---
+
+export interface CreateClientRequest {
+  client_type: ClientType
+  phone: string
+  email?: string
+  // физлицо
+  last_name?: string
+  first_name?: string
+  middle_name?: string
+  // организация
+  name?: string
+  inn?: string
+  kpp?: string
+  contact_person?: string
+}
+
+export interface CreateDeviceDTO {
+  client_id: string
+  device_type_id: string
+  brand: string
+  model: string
+  serial_number?: string
+  appearance_note?: string
+}
+
+export interface CreateRepairRequestDTO {
+  device_id: string
+  problem_description: string
+  planned_deadline?: string | null
+}

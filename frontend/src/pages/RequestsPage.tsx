@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { useAuth } from "@/lib/auth"
 import type { RepairRequest, RequestStatus } from "@/lib/types"
 import { formatDate, formatMoney } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
+import { CreateRequestDialog } from "@/components/forms/CreateRequestDialog"
+import { RequestStatusSelect } from "@/components/forms/RequestStatusSelect"
 import {
   Table,
   TableBody,
@@ -13,6 +16,13 @@ import {
 } from "@/components/ui/table"
 
 export function RequestsPage() {
+  const { user } = useAuth()
+  const canCreate = user?.role === "admin" || user?.role === "manager"
+  const canChangeStatus =
+    user?.role === "admin" ||
+    user?.role === "manager" ||
+    user?.role === "engineer"
+
   const requests = useQuery({
     queryKey: ["requests"],
     queryFn: () => api.get<RepairRequest[]>("/requests"),
@@ -27,11 +37,14 @@ export function RequestsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Заявки</h1>
-        <p className="text-sm text-muted-foreground">
-          Инженер видит только назначенные ему заявки (RLS на уровне БД).
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Заявки</h1>
+          <p className="text-sm text-muted-foreground">
+            Инженер видит только назначенные ему заявки (RLS на уровне БД).
+          </p>
+        </div>
+        {canCreate && <CreateRequestDialog />}
       </div>
 
       {requests.isLoading && (
@@ -72,7 +85,17 @@ export function RequestsPage() {
                     {r.problem_description}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{statusName(r.status_id)}</Badge>
+                    {canChangeStatus && statuses.data ? (
+                      <RequestStatusSelect
+                        requestId={r.id}
+                        statusId={r.status_id}
+                        statuses={statuses.data}
+                      />
+                    ) : (
+                      <Badge variant="secondary">
+                        {statusName(r.status_id)}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatMoney(r.estimated_cost)}

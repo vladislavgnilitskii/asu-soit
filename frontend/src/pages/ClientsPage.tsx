@@ -3,6 +3,7 @@ import { api } from "@/lib/api"
 import type { Client } from "@/lib/types"
 import { formatDate } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
+import { CreateClientDialog } from "@/components/forms/CreateClientDialog"
 import {
   Table,
   TableBody,
@@ -20,11 +21,14 @@ export function ClientsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Клиенты</h1>
-        <p className="text-sm text-muted-foreground">
-          Физические лица и организации.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Клиенты</h1>
+          <p className="text-sm text-muted-foreground">
+            Физические лица и организации.
+          </p>
+        </div>
+        <CreateClientDialog />
       </div>
 
       {clients.isLoading && (
