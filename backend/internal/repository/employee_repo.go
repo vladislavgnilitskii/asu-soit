@@ -25,6 +25,25 @@ func (r *EmployeeRepository) q(ctx context.Context) dbtx.DBTX {
 	return dbtx.From(ctx, r.db)
 }
 
+// ListRoles — справочник ролей (для формы создания сотрудника)
+func (r *EmployeeRepository) ListRoles(ctx context.Context) ([]domain.Role, error) {
+	rows, err := r.q(ctx).Query(ctx, `SELECT id, code, name FROM roles ORDER BY name`)
+	if err != nil {
+		return nil, fmt.Errorf("ListRoles: %w", err)
+	}
+	defer rows.Close()
+
+	var roles []domain.Role
+	for rows.Next() {
+		var role domain.Role
+		if err := rows.Scan(&role.ID, &role.Code, &role.Name); err != nil {
+			return nil, fmt.Errorf("ListRoles scan: %w", err)
+		}
+		roles = append(roles, role)
+	}
+	return roles, nil
+}
+
 // GetByLogin — найти сотрудника по логину для авторизации
 func (r *EmployeeRepository) GetByLogin(ctx context.Context, login string) (*domain.Employee, string, error) {
 	var emp domain.Employee

@@ -181,6 +181,21 @@ type DeviceType struct {
 	Name string `json:"name"`
 }
 
+// RequestStatus — справочник статусов заявки (для выпадающего списка на фронте)
+type RequestStatus struct {
+	ID        string `json:"id"`
+	Code      string `json:"code"`
+	Name      string `json:"name"`
+	SortOrder int    `json:"sort_order"`
+}
+
+// Role — справочник ролей сотрудников (для формы создания сотрудника)
+type Role struct {
+	ID   string `json:"id"`
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
 // Device — устройство клиента, принятое в ремонт
 type Device struct {
 	ID             string    `json:"id"`

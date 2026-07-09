@@ -81,6 +81,12 @@ func Setup(
 			// справочник типов устройств — нужен для формы создания устройства
 			protected.GET("/device-types", deviceHandler.ListTypes)
 
+			// справочник статусов заявки — нужен для смены статуса (любой авторизованный)
+			protected.GET("/request-statuses", requestHandler.ListStatuses)
+
+			// справочник ролей — для формы создания сотрудника (только админ)
+			protected.GET("/roles", auth.RequireRole("admin"), employeeHandler.ListRoles)
+
 			spareParts := protected.Group("/spare-parts")
 			{
 				// склад видят те, у кого есть SELECT на spare_parts

@@ -24,6 +24,27 @@ func (r *RequestRepository) q(ctx context.Context) dbtx.DBTX {
 	return dbtx.From(ctx, r.db)
 }
 
+// ListStatuses — справочник статусов заявки (в порядке жизненного цикла)
+func (r *RequestRepository) ListStatuses(ctx context.Context) ([]domain.RequestStatus, error) {
+	rows, err := r.q(ctx).Query(ctx, `
+		SELECT id, code, name, sort_order FROM request_statuses ORDER BY sort_order
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("ListStatuses: %w", err)
+	}
+	defer rows.Close()
+
+	var statuses []domain.RequestStatus
+	for rows.Next() {
+		var s domain.RequestStatus
+		if err := rows.Scan(&s.ID, &s.Code, &s.Name, &s.SortOrder); err != nil {
+			return nil, fmt.Errorf("ListStatuses scan: %w", err)
+		}
+		statuses = append(statuses, s)
+	}
+	return statuses, nil
+}
+
 // GetAll — все заявки
 func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest, error) {
 	rows, err := r.q(ctx).Query(ctx, `

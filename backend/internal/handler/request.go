@@ -18,6 +18,16 @@ func NewRequestHandler(repo *repository.RequestRepository) *RequestHandler {
 	return &RequestHandler{repo: repo}
 }
 
+// ListStatuses — GET /request-statuses: справочник статусов заявки
+func (h *RequestHandler) ListStatuses(c *gin.Context) {
+	statuses, err := h.repo.ListStatuses(c.Request.Context())
+	if err != nil {
+		respondInternal(c, "RequestHandler.ListStatuses", err)
+		return
+	}
+	respondOK(c, statuses)
+}
+
 func (h *RequestHandler) GetAll(c *gin.Context) {
 	requests, err := h.repo.GetAll(c.Request.Context())
 	if err != nil {

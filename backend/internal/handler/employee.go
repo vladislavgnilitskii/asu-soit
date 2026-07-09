@@ -18,6 +18,16 @@ func NewEmployeeHandler(repo *repository.EmployeeRepository) *EmployeeHandler {
 	return &EmployeeHandler{repo: repo}
 }
 
+// ListRoles — GET /roles: справочник ролей для формы создания сотрудника
+func (h *EmployeeHandler) ListRoles(c *gin.Context) {
+	roles, err := h.repo.ListRoles(c.Request.Context())
+	if err != nil {
+		respondInternal(c, "EmployeeHandler.ListRoles", err)
+		return
+	}
+	respondOK(c, roles)
+}
+
 // Create — POST /employees — завести сотрудника
 func (h *EmployeeHandler) Create(c *gin.Context) {
 	var dto domain.CreateEmployeeDTO
