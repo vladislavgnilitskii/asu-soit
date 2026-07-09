@@ -17,7 +17,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: asu_soit
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # Postgres 18+ хранит данные в /var/lib/postgresql (подкаталог по версии),
+      # а не в /var/lib/postgresql/data — монтируем именно сюда
+      - pgdata:/var/lib/postgresql
     ports:
       # 5433 на хосте, чтобы не конфликтовать с локальным postgres на 5432
       - "5433:5432"
