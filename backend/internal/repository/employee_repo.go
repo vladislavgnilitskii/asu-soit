@@ -54,7 +54,7 @@ func (r *EmployeeRepository) GetByLogin(ctx context.Context, login string) (*dom
 	// Данные для проверки пароля отдаёт SECURITY DEFINER-функция (миграция 015).
 	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, role_id, last_name, first_name,
-		       middle_name, login, password_hash, is_active, role_code
+		       COALESCE(middle_name, ''), login, password_hash, is_active, role_code
 		FROM auth_get_credentials($1)
 	`, login).Scan(
 		&emp.ID, &emp.RoleID, &emp.LastName, &emp.FirstName,
