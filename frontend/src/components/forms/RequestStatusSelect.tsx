@@ -33,8 +33,12 @@ export function RequestStatusSelect({ requestId, statusId, statuses }: Props) {
       toast.error(err instanceof ApiError ? err.message : "Ошибка"),
   })
 
+  // items нужен Base UI, чтобы SelectValue показывал название, а не сырое value
+  const items = statuses.map((s) => ({ value: s.id, label: s.name }))
+
   return (
     <Select
+      items={items}
       value={statusId}
       onValueChange={(v) => v && mutation.mutate(v)}
       disabled={mutation.isPending}

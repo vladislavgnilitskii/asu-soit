@@ -18,6 +18,16 @@ func NewEmployeeHandler(repo *repository.EmployeeRepository) *EmployeeHandler {
 	return &EmployeeHandler{repo: repo}
 }
 
+// ListEngineers — GET /engineers: активные инженеры для назначения на заявку
+func (h *EmployeeHandler) ListEngineers(c *gin.Context) {
+	engineers, err := h.repo.ListEngineers(c.Request.Context())
+	if err != nil {
+		respondInternal(c, "EmployeeHandler.ListEngineers", err)
+		return
+	}
+	respondOK(c, engineers)
+}
+
 // ListRoles — GET /roles: справочник ролей для формы создания сотрудника
 func (h *EmployeeHandler) ListRoles(c *gin.Context) {
 	roles, err := h.repo.ListRoles(c.Request.Context())

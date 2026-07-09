@@ -87,6 +87,9 @@ func Setup(
 			// справочник ролей — для формы создания сотрудника (только админ)
 			protected.GET("/roles", auth.RequireRole("admin"), employeeHandler.ListRoles)
 
+			// активные инженеры — для назначения на заявку (через витрину v_employees)
+			protected.GET("/engineers", auth.RequireRole("admin", "manager"), employeeHandler.ListEngineers)
+
 			spareParts := protected.Group("/spare-parts")
 			{
 				// склад видят те, у кого есть SELECT на spare_parts

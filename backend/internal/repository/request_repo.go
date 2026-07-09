@@ -42,6 +42,9 @@ func (r *RequestRepository) ListStatuses(ctx context.Context) ([]domain.RequestS
 		}
 		statuses = append(statuses, s)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListStatuses rows: %w", err)
+	}
 	return statuses, nil
 }
 

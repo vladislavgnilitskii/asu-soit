@@ -57,6 +57,16 @@ export function CreateDeviceDialog() {
   const set = (key: keyof typeof EMPTY, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
 
+  // items нужны Base UI, чтобы SelectValue показывал подпись, а не сырое value
+  const clientItems = (clients.data ?? []).map((c) => ({
+    value: c.id,
+    label: `${c.phone} (${c.client_type === "individual" ? "физлицо" : "организация"})`,
+  }))
+  const typeItems = (types.data ?? []).map((t) => ({
+    value: t.id,
+    label: t.name,
+  }))
+
   const mutation = useMutation({
     mutationFn: (dto: CreateDeviceDTO) => api.post<Device>("/devices", dto),
     onSuccess: () => {
@@ -92,17 +102,17 @@ export function CreateDeviceDialog() {
           <div className="space-y-2">
             <Label>Клиент *</Label>
             <Select
+              items={clientItems}
               value={form.client_id || null}
               onValueChange={(v) => set("client_id", v ?? "")}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Выберите клиента" />
               </SelectTrigger>
               <SelectContent>
-                {clients.data?.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.phone} (
-                    {c.client_type === "individual" ? "физлицо" : "организация"})
+                {clientItems.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -112,16 +122,17 @@ export function CreateDeviceDialog() {
           <div className="space-y-2">
             <Label>Тип устройства *</Label>
             <Select
+              items={typeItems}
               value={form.device_type_id || null}
               onValueChange={(v) => set("device_type_id", v ?? "")}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Выберите тип" />
               </SelectTrigger>
               <SelectContent>
-                {types.data?.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
+                {typeItems.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>

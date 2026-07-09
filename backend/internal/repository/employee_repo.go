@@ -25,6 +25,37 @@ func (r *EmployeeRepository) q(ctx context.Context) dbtx.DBTX {
 	return dbtx.From(ctx, r.db)
 }
 
+// ListEngineers — активные инженеры для назначения на заявку.
+// Читаем из витрины v_employees (модуль 3): в ней нет password_hash,
+// и SELECT на неё выдан всем ролям — менеджеру не нужен доступ к employees.
+func (r *EmployeeRepository) ListEngineers(ctx context.Context) ([]domain.EngineerListItem, error) {
+	rows, err := r.q(ctx).Query(ctx, `
+		SELECT id, last_name, first_name, COALESCE(middle_name, '')
+		FROM v_employees
+		WHERE role_code = 'engineer' AND is_active
+		ORDER BY last_name, first_name
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("ListEngineers: %w", err)
+	}
+	defer rows.Close()
+
+	var engineers []domain.EngineerListItem
+	for rows.Next() {
+		var e domain.EngineerListItem
+		if err := rows.Scan(&e.ID, &e.LastName, &e.FirstName, &e.MiddleName); err != nil {
+			return nil, fmt.Errorf("ListEngineers scan: %w", err)
+		}
+		engineers = append(engineers, e)
+	}
+	// pgx откладывает ошибку выполнения до итерации: без этой проверки
+	// permission denied выглядел бы как пустой список
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListEngineers rows: %w", err)
+	}
+	return engineers, nil
+}
+
 // ListRoles — справочник ролей (для формы создания сотрудника)
 func (r *EmployeeRepository) ListRoles(ctx context.Context) ([]domain.Role, error) {
 	rows, err := r.q(ctx).Query(ctx, `SELECT id, code, name FROM roles ORDER BY name`)
@@ -40,6 +71,9 @@ func (r *EmployeeRepository) ListRoles(ctx context.Context) ([]domain.Role, erro
 			return nil, fmt.Errorf("ListRoles scan: %w", err)
 		}
 		roles = append(roles, role)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListRoles rows: %w", err)
 	}
 	return roles, nil
 }

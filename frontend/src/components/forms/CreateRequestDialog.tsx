@@ -46,6 +46,12 @@ export function CreateRequestDialog() {
     setDeadline("")
   }
 
+  // items нужны Base UI, чтобы SelectValue показывал подпись, а не сырое value
+  const deviceItems = (devices.data ?? []).map((d) => ({
+    value: d.id,
+    label: `${d.brand} ${d.model}${d.serial_number ? ` · ${d.serial_number}` : ""}`,
+  }))
+
   const mutation = useMutation({
     mutationFn: (dto: CreateRepairRequestDTO) =>
       api.post<RepairRequest>("/requests", dto),
@@ -80,17 +86,17 @@ export function CreateRequestDialog() {
           <div className="space-y-2">
             <Label>Устройство *</Label>
             <Select
+              items={deviceItems}
               value={deviceId || null}
               onValueChange={(v) => setDeviceId(v ?? "")}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Выберите устройство" />
               </SelectTrigger>
               <SelectContent>
-                {devices.data?.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.brand} {d.model}
-                    {d.serial_number ? ` · ${d.serial_number}` : ""}
+                {deviceItems.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>
+                    {d.label}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -91,6 +91,10 @@ export function CreateClientDialog() {
           <div className="space-y-2">
             <Label>Тип</Label>
             <Select
+              items={[
+                { value: "individual", label: "Физлицо" },
+                { value: "organization", label: "Организация" },
+              ]}
               value={form.client_type}
               onValueChange={(v) => v && set("client_type", v)}
             >

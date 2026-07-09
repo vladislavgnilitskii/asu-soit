@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table"
 
 export function RequestsPage() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const canCreate = user?.role === "admin" || user?.role === "manager"
   const canChangeStatus =
@@ -80,11 +82,16 @@ export function RequestsPage() {
                 </TableRow>
               )}
               {requests.data.map((r) => (
-                <TableRow key={r.id}>
+                <TableRow
+                  key={r.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/requests/${r.id}`)}
+                >
                   <TableCell className="max-w-md truncate">
                     {r.problem_description}
                   </TableCell>
-                  <TableCell>
+                  {/* stopPropagation: клик по селекту не должен открывать карточку */}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {canChangeStatus && statuses.data ? (
                       <RequestStatusSelect
                         requestId={r.id}

@@ -196,6 +196,15 @@ type Role struct {
 	Name string `json:"name"`
 }
 
+// EngineerListItem — краткая запись об инженере для назначения на заявку.
+// Читается из витрины v_employees (без password_hash, доступна всем ролям).
+type EngineerListItem struct {
+	ID         string `json:"id"`
+	LastName   string `json:"last_name"`
+	FirstName  string `json:"first_name"`
+	MiddleName string `json:"middle_name,omitempty"`
+}
+
 // Device — устройство клиента, принятое в ремонт
 type Device struct {
 	ID             string    `json:"id"`

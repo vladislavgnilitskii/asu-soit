@@ -77,6 +77,56 @@ export interface Device {
   created_at: string
 }
 
+export interface StatusHistoryEntry {
+  id: string
+  status_id: string
+  status_code: string
+  status_name: string
+  changed_by: string
+  changed_by_name: string
+  changed_at: string
+  comment?: string | null
+}
+
+export interface RequestPartEntry {
+  id: string
+  part_id: string
+  part_name: string
+  quantity: number
+  unit_price: number
+}
+
+export interface Invoice {
+  id: string
+  request_id: string
+  total_amount: number
+  status: "pending" | "paid" | "cancelled"
+  issued_at: string
+}
+
+export interface PartCategory {
+  id: string
+  name: string
+}
+
+export interface SparePart {
+  id: string
+  category_id: string
+  name: string
+  sku?: string | null
+  purchase_price: number
+  sale_price: number
+  quantity_in_stock: number
+  created_at: string
+}
+
+export interface EngineerListItem {
+  id: string
+  last_name: string
+  first_name: string
+  middle_name?: string
+}
+
 // --- DTO создания (зеркало binding-структур бэка) ---
 
 export interface CreateClientRequest {
@@ -107,4 +157,44 @@ export interface CreateRepairRequestDTO {
   device_id: string
   problem_description: string
   planned_deadline?: string | null
+}
+
+export interface UpdateRequestDTO {
+  diagnostic_result?: string
+  estimated_cost?: number
+  final_cost?: number
+}
+
+export interface CreateSparePartDTO {
+  category_id: string
+  name: string
+  sku?: string
+  purchase_price: number
+  sale_price: number
+}
+
+export interface ReceivePartsDTO {
+  quantity: number
+  unit_price: number
+  invoice_number?: string
+  note?: string
+}
+
+export interface WriteOffPartsDTO {
+  quantity: number
+  note?: string
+}
+
+export interface IssuePartToRequestDTO {
+  part_id: string
+  quantity: number
+}
+
+export interface CreateEmployeeDTO {
+  role_id: string
+  last_name: string
+  first_name: string
+  middle_name?: string
+  login: string
+  password: string
 }
