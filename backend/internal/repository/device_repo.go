@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -17,9 +18,14 @@ func NewDeviceRepository(db *pgxpool.Pool) *DeviceRepository {
 	return &DeviceRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *DeviceRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // GetAll — все устройства
 func (r *DeviceRepository) GetAll(ctx context.Context) ([]domain.Device, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, client_id, device_type_id, brand, model,
 		       serial_number, appearance_note, created_at
 		FROM devices
@@ -48,7 +54,7 @@ func (r *DeviceRepository) GetAll(ctx context.Context) ([]domain.Device, error) 
 // GetByID — одно устройство по id
 func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*domain.Device, error) {
 	var d domain.Device
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, client_id, device_type_id, brand, model,
 		       serial_number, appearance_note, created_at
 		FROM devices
@@ -66,7 +72,7 @@ func (r *DeviceRepository) GetByID(ctx context.Context, id string) (*domain.Devi
 // Create — зарегистрировать устройство клиента
 func (r *DeviceRepository) Create(ctx context.Context, dto domain.CreateDeviceDTO) (*domain.Device, error) {
 	var d domain.Device
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		INSERT INTO devices
 		    (client_id, device_type_id, brand, model, serial_number, appearance_note)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -86,7 +92,7 @@ func (r *DeviceRepository) Create(ctx context.Context, dto domain.CreateDeviceDT
 
 // ListTypes — справочник типов устройств
 func (r *DeviceRepository) ListTypes(ctx context.Context) ([]domain.DeviceType, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, name FROM device_types ORDER BY name
 	`)
 	if err != nil {

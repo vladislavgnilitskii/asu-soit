@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -20,9 +21,14 @@ func NewWarehouseRepository(db *pgxpool.Pool) *WarehouseRepository {
 	return &WarehouseRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *WarehouseRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // ListCategories — справочник категорий запчастей
 func (r *WarehouseRepository) ListCategories(ctx context.Context) ([]domain.PartCategory, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, name FROM part_categories ORDER BY name`)
+	rows, err := r.q(ctx).Query(ctx, `SELECT id, name FROM part_categories ORDER BY name`)
 	if err != nil {
 		return nil, fmt.Errorf("ListCategories: %w", err)
 	}
@@ -41,7 +47,7 @@ func (r *WarehouseRepository) ListCategories(ctx context.Context) ([]domain.Part
 
 // GetAllParts — все запчасти на складе
 func (r *WarehouseRepository) GetAllParts(ctx context.Context) ([]domain.SparePart, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, category_id, name, sku, purchase_price, sale_price, quantity_in_stock, created_at
 		FROM spare_parts
 		ORDER BY name
@@ -66,7 +72,7 @@ func (r *WarehouseRepository) GetAllParts(ctx context.Context) ([]domain.SparePa
 // GetPartByID — одна запчасть по id
 func (r *WarehouseRepository) GetPartByID(ctx context.Context, id string) (*domain.SparePart, error) {
 	var p domain.SparePart
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, category_id, name, sku, purchase_price, sale_price, quantity_in_stock, created_at
 		FROM spare_parts
 		WHERE id = $1
@@ -86,7 +92,7 @@ func (r *WarehouseRepository) GetPartByID(ctx context.Context, id string) (*doma
 // RequestRepository.UpdateStatus для status_id (см. §5.7 в STATE.md).
 func (r *WarehouseRepository) CreatePart(ctx context.Context, dto domain.CreateSparePartDTO) (*domain.SparePart, error) {
 	var categoryExists bool
-	if err := r.db.QueryRow(ctx, `
+	if err := r.q(ctx).QueryRow(ctx, `
 		SELECT EXISTS(SELECT 1 FROM part_categories WHERE id = $1)
 	`, dto.CategoryID).Scan(&categoryExists); err != nil {
 		return nil, fmt.Errorf("CreatePart check category: %w", err)
@@ -96,7 +102,7 @@ func (r *WarehouseRepository) CreatePart(ctx context.Context, dto domain.CreateS
 	}
 
 	var p domain.SparePart
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		INSERT INTO spare_parts (category_id, name, sku, purchase_price, sale_price)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, category_id, name, sku, purchase_price, sale_price, quantity_in_stock, created_at
@@ -112,7 +118,7 @@ func (r *WarehouseRepository) CreatePart(ctx context.Context, dto domain.CreateS
 // движение по складу. Блокировка строки не нужна — приход не может уйти
 // в отрицательный остаток, гонка тут не создаёт некорректного состояния.
 func (r *WarehouseRepository) Receive(ctx context.Context, partID, employeeID string, dto domain.ReceivePartsDTO) (*domain.SparePart, error) {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Receive begin: %w", err)
 	}
@@ -151,7 +157,7 @@ func (r *WarehouseRepository) Receive(ctx context.Context, partID, employeeID st
 // параллельных списания могут оба прочитать один и тот же остаток и
 // оба решить, что деталей достаточно, — уйдём в минус в обход проверки.
 func (r *WarehouseRepository) WriteOff(ctx context.Context, partID, employeeID string, dto domain.WriteOffPartsDTO) (*domain.SparePart, error) {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("WriteOff begin: %w", err)
 	}
@@ -204,7 +210,7 @@ func (r *WarehouseRepository) WriteOff(ctx context.Context, partID, employeeID s
 // списывает остаток, пишет движение по складу и добавляет строку в
 // request_parts (будущий счёт клиенту) по цене sale_price на момент выдачи.
 func (r *WarehouseRepository) IssueToRequest(ctx context.Context, requestID, employeeID string, dto domain.IssuePartToRequestDTO) (*domain.RequestPartEntry, error) {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("IssueToRequest begin: %w", err)
 	}
@@ -280,7 +286,7 @@ func (r *WarehouseRepository) IssueToRequest(ctx context.Context, requestID, emp
 
 // GetRequestParts — детали, списанные на заявку (для просмотра/будущего счёта)
 func (r *WarehouseRepository) GetRequestParts(ctx context.Context, requestID string) ([]domain.RequestPartEntry, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT rp.id, rp.part_id, sp.name, rp.quantity, rp.unit_price
 		FROM request_parts rp
 		JOIN spare_parts sp ON sp.id = rp.part_id

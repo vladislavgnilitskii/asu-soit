@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -19,9 +20,14 @@ func NewClientRepository(db *pgxpool.Pool) *ClientRepository {
 	return &ClientRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *ClientRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // GetAll — получить всех клиентов
 func (r *ClientRepository) GetAll(ctx context.Context) ([]domain.Client, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, client_type, phone, email, created_at
 		FROM clients
 		ORDER BY created_at DESC
@@ -46,7 +52,7 @@ func (r *ClientRepository) GetAll(ctx context.Context) ([]domain.Client, error) 
 // GetByID — получить одного клиента по id
 func (r *ClientRepository) GetByID(ctx context.Context, id string) (*domain.Client, error) {
 	var c domain.Client
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, client_type, phone, email, created_at
 		FROM clients
 		WHERE id = $1
@@ -61,7 +67,7 @@ func (r *ClientRepository) GetByID(ctx context.Context, id string) (*domain.Clie
 // использует транзакцию потому что пишем в две таблицы:
 // clients и individuals (если физлицо)
 func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRequest) (*domain.Client, error) {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Create begin tx: %w", err)
 	}
@@ -108,7 +114,7 @@ func (r *ClientRepository) Create(ctx context.Context, dto domain.CreateClientRe
 // GetIndividual — данные физлица по client_id
 func (r *ClientRepository) GetIndividual(ctx context.Context, clientID string) (*domain.Individual, error) {
 	var ind domain.Individual
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, client_id, last_name, first_name, middle_name
 		FROM individuals
 		WHERE client_id = $1
@@ -122,7 +128,7 @@ func (r *ClientRepository) GetIndividual(ctx context.Context, clientID string) (
 // GetOrganization — данные организации по client_id
 func (r *ClientRepository) GetOrganization(ctx context.Context, clientID string) (*domain.Organization, error) {
 	var org domain.Organization
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, client_id, name, inn, kpp, contact_person
 		FROM organizations
 		WHERE client_id = $1

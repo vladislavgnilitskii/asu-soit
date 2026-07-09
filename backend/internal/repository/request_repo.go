@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -18,9 +19,14 @@ func NewRequestRepository(db *pgxpool.Pool) *RequestRepository {
 	return &RequestRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *RequestRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // GetAll — все заявки
 func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, device_id, assigned_to, status_id,
 		       problem_description, diagnostic_result,
 		       estimated_cost, final_cost,
@@ -53,7 +59,7 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 // GetByID — одна заявка по id
 func (r *RequestRepository) GetByID(ctx context.Context, id string) (*domain.RepairRequest, error) {
 	var req domain.RepairRequest
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, device_id, assigned_to, status_id,
 		       problem_description, diagnostic_result,
 		       estimated_cost, final_cost,
@@ -76,7 +82,7 @@ func (r *RequestRepository) GetByID(ctx context.Context, id string) (*domain.Rep
 // статус по умолчанию — "new", берём из справочника
 func (r *RequestRepository) Create(ctx context.Context, dto domain.CreateRepairRequestDTO) (*domain.RepairRequest, error) {
 	var req domain.RepairRequest
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		INSERT INTO repair_requests
 		    (device_id, status_id, problem_description, planned_deadline)
 		VALUES (
@@ -103,7 +109,7 @@ func (r *RequestRepository) Create(ctx context.Context, dto domain.CreateRepairR
 
 // UpdateStatus — сменить статус заявки и записать в историю
 func (r *RequestRepository) UpdateStatus(ctx context.Context, id string, dto domain.UpdateRequestStatusDTO, employeeID string) error {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("UpdateStatus begin: %w", err)
 	}
@@ -146,7 +152,7 @@ func (r *RequestRepository) UpdateStatus(ctx context.Context, id string, dto dom
 
 // Assign — назначить исполнителя на заявку
 func (r *RequestRepository) Assign(ctx context.Context, id, assignedTo string) error {
-	tag, err := r.db.Exec(ctx, `
+	tag, err := r.q(ctx).Exec(ctx, `
 		UPDATE repair_requests SET assigned_to = $1, updated_at = now()
 		WHERE id = $2
 	`, assignedTo, id)
@@ -163,7 +169,7 @@ func (r *RequestRepository) Assign(ctx context.Context, id, assignedTo string) e
 // COALESCE оставляет прежнее значение, если новое не передано (nil).
 func (r *RequestRepository) UpdateDetails(ctx context.Context, id string, dto domain.UpdateRequestDTO) (*domain.RepairRequest, error) {
 	var req domain.RepairRequest
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		UPDATE repair_requests SET
 		    diagnostic_result = COALESCE($1, diagnostic_result),
 		    estimated_cost    = COALESCE($2, estimated_cost),
@@ -192,7 +198,7 @@ func (r *RequestRepository) UpdateDetails(ctx context.Context, id string, dto do
 
 // Close — закрыть заявку: статус 'closed', проставить closed_at, записать историю.
 func (r *RequestRepository) Close(ctx context.Context, id, employeeID, comment string) error {
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.q(ctx).Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("Close begin: %w", err)
 	}
@@ -232,7 +238,7 @@ func (r *RequestRepository) Close(ctx context.Context, id, employeeID, comment s
 // GetHistory — история смены статусов заявки (по возрастанию времени),
 // обогащённая кодом/названием статуса и ФИО сотрудника.
 func (r *RequestRepository) GetHistory(ctx context.Context, requestID string) ([]domain.StatusHistoryEntry, error) {
-	rows, err := r.db.Query(ctx, `
+	rows, err := r.q(ctx).Query(ctx, `
 		SELECT h.id, h.status_id, s.code, s.name,
 		       h.changed_by, e.last_name || ' ' || e.first_name,
 		       h.changed_at, h.comment

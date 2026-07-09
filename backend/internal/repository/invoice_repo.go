@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -20,10 +21,15 @@ func NewInvoiceRepository(db *pgxpool.Pool) *InvoiceRepository {
 	return &InvoiceRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *InvoiceRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // GetByID — счёт по id
 func (r *InvoiceRepository) GetByID(ctx context.Context, id string) (*domain.Invoice, error) {
 	var inv domain.Invoice
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
             SELECT id, request_id, total_amount, status, issued_at
             FROM invoices
             WHERE id = $1
@@ -41,7 +47,7 @@ func (r *InvoiceRepository) GetByID(ctx context.Context, id string) (*domain.Inv
 // в БД стоит UNIQUE(request_id)). Зеркало GetByID, только фильтр по request_id.
 func (r *InvoiceRepository) GetByRequestID(ctx context.Context, requestID string) (*domain.Invoice, error) {
 	var inv domain.Invoice
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT id, request_id, total_amount, status, issued_at
 		FROM invoices
 		WHERE request_id = $1
@@ -64,7 +70,7 @@ func (r *InvoiceRepository) CreateForRequest(ctx context.Context, requestID stri
 	//    nil-указатель здесь означает SQL NULL.
 	var closedAt *time.Time
 	var finalCost *float64
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT closed_at, final_cost FROM repair_requests WHERE id = $1
 	`, requestID).Scan(&closedAt, &finalCost)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -80,7 +86,7 @@ func (r *InvoiceRepository) CreateForRequest(ctx context.Context, requestID stri
 	// 2. Считаем сумму деталей. SUM по пустому набору строк вернул бы NULL,
 	//    поэтому оборачиваем в COALESCE(..., 0) — «если NULL, то 0».
 	var partsTotal float64
-	err = r.db.QueryRow(ctx, `
+	err = r.q(ctx).QueryRow(ctx, `
 		SELECT COALESCE(SUM(quantity * unit_price), 0)
 		FROM request_parts
 		WHERE request_id = $1
@@ -100,7 +106,7 @@ func (r *InvoiceRepository) CreateForRequest(ctx context.Context, requestID stri
 	//    счёта по той же заявке защищает UNIQUE(request_id) на уровне БД —
 	//    ловим её нарушение (код 23505), как в Этапе 3 с request_parts.
 	var inv domain.Invoice
-	err = r.db.QueryRow(ctx, `
+	err = r.q(ctx).QueryRow(ctx, `
 		INSERT INTO invoices (request_id, total_amount)
 		VALUES ($1, $2)
 		RETURNING id, request_id, total_amount, status, issued_at
@@ -122,7 +128,7 @@ func (r *InvoiceRepository) CreateForRequest(ctx context.Context, requestID stri
 // счёта нет вовсе или он уже не pending.
 func (r *InvoiceRepository) UpdateStatus(ctx context.Context, id, newStatus string) (*domain.Invoice, error) {
 	var inv domain.Invoice
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		UPDATE invoices SET status = $1
 		WHERE id = $2 AND status = 'pending'
 		RETURNING id, request_id, total_amount, status, issued_at

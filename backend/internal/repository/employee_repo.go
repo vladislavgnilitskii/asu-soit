@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vladislavgnilitskii/asu-soit/internal/dbtx"
 	"github.com/vladislavgnilitskii/asu-soit/internal/domain"
 )
 
@@ -19,12 +20,17 @@ func NewEmployeeRepository(db *pgxpool.Pool) *EmployeeRepository {
 	return &EmployeeRepository{db: db}
 }
 
+// q — executor запроса: транзакция из контекста (с личностью сотрудника) или пул.
+func (r *EmployeeRepository) q(ctx context.Context) dbtx.DBTX {
+	return dbtx.From(ctx, r.db)
+}
+
 // GetByLogin — найти сотрудника по логину для авторизации
 func (r *EmployeeRepository) GetByLogin(ctx context.Context, login string) (*domain.Employee, string, error) {
 	var emp domain.Employee
 	var roleCode string
 
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		SELECT e.id, e.role_id, e.last_name, e.first_name,
 		       e.middle_name, e.login, e.password_hash, e.is_active,
 		       ro.code as role_code
@@ -64,7 +70,7 @@ func scanEmployee(row pgx.Row) (*domain.Employee, error) {
 func (r *EmployeeRepository) Create(ctx context.Context, dto domain.CreateEmployeeDTO, passwordHash string) (*domain.Employee, error) {
 	// role_id проверяем заранее → понятный 400 вместо сырого FK-сбоя
 	var roleExists bool
-	if err := r.db.QueryRow(ctx, `
+	if err := r.q(ctx).QueryRow(ctx, `
 		SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)
 	`, dto.RoleID).Scan(&roleExists); err != nil {
 		return nil, fmt.Errorf("Create check role: %w", err)
@@ -74,7 +80,7 @@ func (r *EmployeeRepository) Create(ctx context.Context, dto domain.CreateEmploy
 	}
 
 	var e domain.Employee
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		INSERT INTO employees (role_id, last_name, first_name, middle_name, login, password_hash)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, role_id, last_name, first_name, COALESCE(middle_name, ''), login, is_active
@@ -92,7 +98,7 @@ func (r *EmployeeRepository) Create(ctx context.Context, dto domain.CreateEmploy
 
 // GetAll — список сотрудников (без секретов)
 func (r *EmployeeRepository) GetAll(ctx context.Context) ([]domain.Employee, error) {
-	rows, err := r.db.Query(ctx, `SELECT `+employeeColumns+` FROM employees ORDER BY last_name, first_name`)
+	rows, err := r.q(ctx).Query(ctx, `SELECT `+employeeColumns+` FROM employees ORDER BY last_name, first_name`)
 	if err != nil {
 		return nil, fmt.Errorf("GetAll employees: %w", err)
 	}
@@ -111,7 +117,7 @@ func (r *EmployeeRepository) GetAll(ctx context.Context) ([]domain.Employee, err
 
 // GetByID — сотрудник по id (без секретов)
 func (r *EmployeeRepository) GetByID(ctx context.Context, id string) (*domain.Employee, error) {
-	e, err := scanEmployee(r.db.QueryRow(ctx, `SELECT `+employeeColumns+` FROM employees WHERE id = $1`, id))
+	e, err := scanEmployee(r.q(ctx).QueryRow(ctx, `SELECT `+employeeColumns+` FROM employees WHERE id = $1`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrEmployeeNotFound
 	}
@@ -126,7 +132,7 @@ func (r *EmployeeRepository) Update(ctx context.Context, id string, dto domain.U
 	// если меняют роль — проверяем, что новая существует
 	if dto.RoleID != nil {
 		var roleExists bool
-		if err := r.db.QueryRow(ctx, `
+		if err := r.q(ctx).QueryRow(ctx, `
 			SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)
 		`, *dto.RoleID).Scan(&roleExists); err != nil {
 			return nil, fmt.Errorf("Update check role: %w", err)
@@ -137,7 +143,7 @@ func (r *EmployeeRepository) Update(ctx context.Context, id string, dto domain.U
 	}
 
 	var e domain.Employee
-	err := r.db.QueryRow(ctx, `
+	err := r.q(ctx).QueryRow(ctx, `
 		UPDATE employees SET
 		    role_id     = COALESCE($1, role_id),
 		    last_name   = COALESCE($2, last_name),

@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/vladislavgnilitskii/asu-soit/internal/auth"
 	"github.com/vladislavgnilitskii/asu-soit/internal/handler"
 )
@@ -15,6 +16,7 @@ func Setup(
 	employeeHandler *handler.EmployeeHandler,
 	authHandler *handler.AuthHandler,
 	jwtSecret string,
+	pool *pgxpool.Pool,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -26,6 +28,9 @@ func Setup(
 		// защищённые маршруты — нужен валидный токен
 		protected := api.Group("")
 		protected.Use(auth.RequireAuth(jwtSecret))
+		// каждый аутентифицированный запрос идёт в транзакции с личностью
+		// сотрудника (app.current_employee_id) — для RLS и аудита
+		protected.Use(auth.TxPerRequest(pool))
 		{
 			clients := protected.Group("/clients")
 			{
