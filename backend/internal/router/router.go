@@ -17,6 +17,7 @@ func Setup(
 	invoiceHandler *handler.InvoiceHandler,
 	employeeHandler *handler.EmployeeHandler,
 	authHandler *handler.AuthHandler,
+	healthHandler *handler.HealthHandler,
 	jwtSecret string,
 	pool *pgxpool.Pool,
 ) *gin.Engine {
@@ -32,6 +33,10 @@ func Setup(
 
 	api := r.Group("/api/v1")
 	{
+		// пробы для оркестратора/healthcheck — без авторизации
+		api.GET("/health", healthHandler.Live)
+		api.GET("/health/ready", healthHandler.Ready)
+
 		// публичный маршрут — авторизация (под rate-limit)
 		api.POST("/auth/login", loginLimiter.Middleware(), authHandler.Login)
 

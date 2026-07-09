@@ -44,9 +44,10 @@ func main() {
 	invoiceHandler := handler.NewInvoiceHandler(invoiceRepo)
 	employeeHandler := handler.NewEmployeeHandler(employeeRepo)
 	authHandler := handler.NewAuthHandler(employeeRepo, cfg.JWTSecret)
+	healthHandler := handler.NewHealthHandler(pool)
 
 	// роутер
-	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, employeeHandler, authHandler, cfg.JWTSecret, pool)
+	r := router.Setup(clientHandler, requestHandler, deviceHandler, warehouseHandler, invoiceHandler, employeeHandler, authHandler, healthHandler, cfg.JWTSecret, pool)
 
 	// таймауты защищают от медленных клиентов (Slowloris) и висящих соединений
 	srv := &http.Server{
