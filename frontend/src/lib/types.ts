@@ -1,6 +1,21 @@
 // Типы данных API — зеркало DTO Go-бэкенда (backend/internal/domain).
 // Держим в синхроне с сервером вручную (фронт и бэк — разные языки).
 
+// Page — обёртка постраничного ответа (зеркало domain.Page[T]).
+export interface Page<T> {
+  items: T[]
+  total: number
+  limit: number
+  offset: number
+}
+
+// RequestStats — счётчики для дашборда (GET /requests/stats).
+export interface RequestStats {
+  total: number
+  open: number
+  closed: number
+}
+
 export type RoleCode =
   | "admin"
   | "manager"

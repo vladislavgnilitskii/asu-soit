@@ -189,6 +189,13 @@ type RequestStatus struct {
 	SortOrder int    `json:"sort_order"`
 }
 
+// RequestStats — сводные счётчики заявок для дашборда (с учётом RLS).
+type RequestStats struct {
+	Total  int `json:"total"`
+	Open   int `json:"open"`
+	Closed int `json:"closed"`
+}
+
 // Role — справочник ролей сотрудников (для формы создания сотрудника)
 type Role struct {
 	ID   string `json:"id"`

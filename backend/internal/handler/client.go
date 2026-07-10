@@ -21,12 +21,13 @@ func NewClientHandler(repo *repository.ClientRepository) *ClientHandler {
 
 // GetAll — обработчик GET /api/v1/clients
 func (h *ClientHandler) GetAll(c *gin.Context) {
-	clients, err := h.repo.GetAll(c.Request.Context())
+	p := parsePageParams(c)
+	clients, total, err := h.repo.GetAll(c.Request.Context(), p)
 	if err != nil {
 		respondInternal(c, "ClientHandler.GetAll", err)
 		return
 	}
-	respondOK(c, clients)
+	respondOK(c, domain.NewPage(clients, total, p))
 }
 
 // GetByID — обработчик GET /api/v1/clients/:id

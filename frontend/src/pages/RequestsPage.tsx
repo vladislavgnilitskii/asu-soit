@@ -1,8 +1,10 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
-import type { RepairRequest, RequestStatus } from "@/lib/types"
+import type { Page, RepairRequest, RequestStatus } from "@/lib/types"
+import { Pagination } from "@/components/Pagination"
 import { formatDate, formatMoney } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
 import { CreateRequestDialog } from "@/components/forms/CreateRequestDialog"
@@ -26,9 +28,13 @@ export function RequestsPage() {
     user?.role === "manager" ||
     user?.role === "engineer"
 
+  const limit = 20
+  const [offset, setOffset] = useState(0)
   const requests = useQuery({
-    queryKey: ["requests"],
-    queryFn: () => api.get<RepairRequest[]>("/requests"),
+    queryKey: ["requests", offset],
+    queryFn: () =>
+      api.get<Page<RepairRequest>>(`/requests?limit=${limit}&offset=${offset}`),
+    placeholderData: keepPreviousData,
   })
   const statuses = useQuery({
     queryKey: ["request-statuses"],
@@ -70,7 +76,7 @@ export function RequestsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.data.length === 0 && (
+              {requests.data.items.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -80,7 +86,7 @@ export function RequestsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {requests.data.map((r) => (
+              {requests.data.items.map((r) => (
                 <TableRow
                   key={r.id}
                   className="cursor-pointer"
@@ -115,6 +121,15 @@ export function RequestsPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {requests.data && (
+        <Pagination
+          total={requests.data.total}
+          limit={requests.data.limit}
+          offset={requests.data.offset}
+          onChange={setOffset}
+        />
       )}
     </div>
   )

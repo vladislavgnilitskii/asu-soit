@@ -26,14 +26,20 @@ func (r *ClientRepository) q(ctx context.Context) dbtx.DBTX {
 }
 
 // GetAll — получить всех клиентов
-func (r *ClientRepository) GetAll(ctx context.Context) ([]domain.Client, error) {
+func (r *ClientRepository) GetAll(ctx context.Context, p domain.PageParams) ([]domain.Client, int, error) {
+	var total int
+	if err := r.q(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM clients`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("GetAll clients count: %w", err)
+	}
+
 	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, client_type, phone, email, created_at
 		FROM clients
 		ORDER BY created_at DESC
-	`)
+		LIMIT $1 OFFSET $2
+	`, p.Limit, p.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("GetAll: %w", err)
+		return nil, 0, fmt.Errorf("GetAll: %w", err)
 	}
 	defer rows.Close()
 
@@ -42,14 +48,14 @@ func (r *ClientRepository) GetAll(ctx context.Context) ([]domain.Client, error) 
 		var c domain.Client
 		err := rows.Scan(&c.ID, &c.ClientType, &c.Phone, &c.Email, &c.CreatedAt)
 		if err != nil {
-			return nil, fmt.Errorf("GetAll scan: %w", err)
+			return nil, 0, fmt.Errorf("GetAll scan: %w", err)
 		}
 		clients = append(clients, c)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("GetAll clients rows: %w", err)
+		return nil, 0, fmt.Errorf("GetAll clients rows: %w", err)
 	}
-	return clients, nil
+	return clients, total, nil
 }
 
 // GetByID — получить одного клиента по id

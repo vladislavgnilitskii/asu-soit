@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
-import type { Client } from "@/lib/types"
+import type { Client, Page } from "@/lib/types"
 import { formatDate } from "@/lib/format"
 import { Badge } from "@/components/ui/badge"
+import { Pagination } from "@/components/Pagination"
 import { CreateClientDialog } from "@/components/forms/CreateClientDialog"
 import {
   Table,
@@ -15,9 +17,13 @@ import {
 import { TableSkeleton } from "@/components/TableSkeleton"
 
 export function ClientsPage() {
+  const limit = 20
+  const [offset, setOffset] = useState(0)
   const clients = useQuery({
-    queryKey: ["clients"],
-    queryFn: () => api.get<Client[]>("/clients"),
+    queryKey: ["clients", offset],
+    queryFn: () =>
+      api.get<Page<Client>>(`/clients?limit=${limit}&offset=${offset}`),
+    placeholderData: keepPreviousData,
   })
 
   return (
@@ -51,7 +57,7 @@ export function ClientsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clients.data.length === 0 && (
+              {clients.data.items.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={4}
@@ -61,7 +67,7 @@ export function ClientsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {clients.data.map((c) => (
+              {clients.data.items.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
                     <Badge variant="outline">
@@ -78,6 +84,15 @@ export function ClientsPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {clients.data && (
+        <Pagination
+          total={clients.data.total}
+          limit={clients.data.limit}
+          offset={clients.data.offset}
+          onChange={setOffset}
+        />
       )}
     </div>
   )

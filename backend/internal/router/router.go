@@ -58,6 +58,9 @@ func Setup(
 
 			requests := protected.Group("/requests")
 			{
+				// сводные счётчики для дашборда (RLS-aware); static-сегмент
+				// объявляем до "/:id", чтобы он не перехватил "stats"
+				requests.GET("/stats", requestHandler.Stats)
 				// список/карточку заявок видят все роли; RLS сам покажет
 				// инженеру только его заявки (модуль 2)
 				requests.GET("", requestHandler.GetAll)

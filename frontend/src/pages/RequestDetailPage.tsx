@@ -9,6 +9,7 @@ import type {
   Device,
   EngineerListItem,
   Invoice,
+  Page,
   RepairRequest,
   RequestPartEntry,
   RequestStatus,
@@ -508,7 +509,7 @@ function IssuePartDialog({ requestId }: { requestId: string }) {
 
   const partsCatalog = useQuery({
     queryKey: ["spare-parts"],
-    queryFn: () => api.get<SparePart[]>("/spare-parts"),
+    queryFn: () => api.get<Page<SparePart>>("/spare-parts?limit=100"),
     enabled: open,
   })
 
@@ -530,7 +531,7 @@ function IssuePartDialog({ requestId }: { requestId: string }) {
       toast.error(err instanceof ApiError ? err.message : "Ошибка"),
   })
 
-  const items = (partsCatalog.data ?? [])
+  const items = (partsCatalog.data?.items ?? [])
     .filter((p) => p.quantity_in_stock > 0)
     .map((p) => ({
       value: p.id,

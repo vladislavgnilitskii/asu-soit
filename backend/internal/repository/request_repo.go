@@ -48,8 +48,28 @@ func (r *RequestRepository) ListStatuses(ctx context.Context) ([]domain.RequestS
 	return statuses, nil
 }
 
-// GetAll — все заявки
-func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest, error) {
+// Stats — сводные счётчики заявок одним запросом (с учётом RLS).
+func (r *RequestRepository) Stats(ctx context.Context) (domain.RequestStats, error) {
+	var s domain.RequestStats
+	err := r.q(ctx).QueryRow(ctx, `
+		SELECT COUNT(*),
+		       COUNT(*) FILTER (WHERE closed_at IS NULL),
+		       COUNT(*) FILTER (WHERE closed_at IS NOT NULL)
+		FROM repair_requests
+	`).Scan(&s.Total, &s.Open, &s.Closed)
+	if err != nil {
+		return domain.RequestStats{}, fmt.Errorf("Stats: %w", err)
+	}
+	return s, nil
+}
+
+// GetAll — страница заявок + общее число (с учётом RLS).
+func (r *RequestRepository) GetAll(ctx context.Context, p domain.PageParams) ([]domain.RepairRequest, int, error) {
+	var total int
+	if err := r.q(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM repair_requests`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("GetAll requests count: %w", err)
+	}
+
 	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, device_id, assigned_to, status_id,
 		       problem_description, diagnostic_result,
@@ -57,9 +77,10 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 		       planned_deadline, created_at, closed_at
 		FROM repair_requests
 		ORDER BY created_at DESC
-	`)
+		LIMIT $1 OFFSET $2
+	`, p.Limit, p.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("GetAll requests: %w", err)
+		return nil, 0, fmt.Errorf("GetAll requests: %w", err)
 	}
 	defer rows.Close()
 
@@ -73,14 +94,14 @@ func (r *RequestRepository) GetAll(ctx context.Context) ([]domain.RepairRequest,
 			&req.PlannedDeadline, &req.CreatedAt, &req.ClosedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("GetAll scan: %w", err)
+			return nil, 0, fmt.Errorf("GetAll scan: %w", err)
 		}
 		requests = append(requests, req)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("GetAll requests rows: %w", err)
+		return nil, 0, fmt.Errorf("GetAll requests rows: %w", err)
 	}
-	return requests, nil
+	return requests, total, nil
 }
 
 // GetByID — одна заявка по id

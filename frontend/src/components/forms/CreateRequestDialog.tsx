@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api"
 import type {
   CreateRepairRequestDTO,
   Device,
+  Page,
   RepairRequest,
 } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -36,7 +37,7 @@ export function CreateRequestDialog() {
 
   const devices = useQuery({
     queryKey: ["devices"],
-    queryFn: () => api.get<Device[]>("/devices"),
+    queryFn: () => api.get<Page<Device>>("/devices?limit=100"),
     enabled: open,
   })
 
@@ -47,7 +48,7 @@ export function CreateRequestDialog() {
   }
 
   // items нужны Base UI, чтобы SelectValue показывал подпись, а не сырое value
-  const deviceItems = (devices.data ?? []).map((d) => ({
+  const deviceItems = (devices.data?.items ?? []).map((d) => ({
     value: d.id,
     label: `${d.brand} ${d.model}${d.serial_number ? ` · ${d.serial_number}` : ""}`,
   }))

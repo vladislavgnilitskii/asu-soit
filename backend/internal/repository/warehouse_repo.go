@@ -48,15 +48,21 @@ func (r *WarehouseRepository) ListCategories(ctx context.Context) ([]domain.Part
 	return categories, nil
 }
 
-// GetAllParts — все запчасти на складе
-func (r *WarehouseRepository) GetAllParts(ctx context.Context) ([]domain.SparePart, error) {
+// GetAllParts — страница запчастей на складе + общее число
+func (r *WarehouseRepository) GetAllParts(ctx context.Context, pg domain.PageParams) ([]domain.SparePart, int, error) {
+	var total int
+	if err := r.q(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM spare_parts`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("GetAllParts count: %w", err)
+	}
+
 	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, category_id, name, sku, purchase_price, sale_price, quantity_in_stock, created_at
 		FROM spare_parts
 		ORDER BY name
-	`)
+		LIMIT $1 OFFSET $2
+	`, pg.Limit, pg.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("GetAllParts: %w", err)
+		return nil, 0, fmt.Errorf("GetAllParts: %w", err)
 	}
 	defer rows.Close()
 
@@ -65,14 +71,14 @@ func (r *WarehouseRepository) GetAllParts(ctx context.Context) ([]domain.SparePa
 		var p domain.SparePart
 		err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.SKU, &p.PurchasePrice, &p.SalePrice, &p.QuantityInStock, &p.CreatedAt)
 		if err != nil {
-			return nil, fmt.Errorf("GetAllParts scan: %w", err)
+			return nil, 0, fmt.Errorf("GetAllParts scan: %w", err)
 		}
 		parts = append(parts, p)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("GetAllParts rows: %w", err)
+		return nil, 0, fmt.Errorf("GetAllParts rows: %w", err)
 	}
-	return parts, nil
+	return parts, total, nil
 }
 
 // GetPartByID — одна запчасть по id

@@ -29,12 +29,13 @@ func (h *WarehouseHandler) ListCategories(c *gin.Context) {
 
 // GetAllParts — GET /spare-parts
 func (h *WarehouseHandler) GetAllParts(c *gin.Context) {
-	parts, err := h.repo.GetAllParts(c.Request.Context())
+	pg := parsePageParams(c)
+	parts, total, err := h.repo.GetAllParts(c.Request.Context(), pg)
 	if err != nil {
 		respondInternal(c, "WarehouseHandler.GetAllParts", err)
 		return
 	}
-	respondOK(c, parts)
+	respondOK(c, domain.NewPage(parts, total, pg))
 }
 
 // GetPartByID — GET /spare-parts/:id

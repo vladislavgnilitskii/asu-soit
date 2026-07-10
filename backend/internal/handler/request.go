@@ -28,13 +28,24 @@ func (h *RequestHandler) ListStatuses(c *gin.Context) {
 	respondOK(c, statuses)
 }
 
+// Stats — GET /requests/stats: сводные счётчики для дашборда
+func (h *RequestHandler) Stats(c *gin.Context) {
+	stats, err := h.repo.Stats(c.Request.Context())
+	if err != nil {
+		respondInternal(c, "RequestHandler.Stats", err)
+		return
+	}
+	respondOK(c, stats)
+}
+
 func (h *RequestHandler) GetAll(c *gin.Context) {
-	requests, err := h.repo.GetAll(c.Request.Context())
+	p := parsePageParams(c)
+	requests, total, err := h.repo.GetAll(c.Request.Context(), p)
 	if err != nil {
 		respondInternal(c, "RequestHandler.GetAll", err)
 		return
 	}
-	respondOK(c, requests)
+	respondOK(c, domain.NewPage(requests, total, p))
 }
 
 func (h *RequestHandler) GetByID(c *gin.Context) {

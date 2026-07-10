@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ClipboardList, Wrench, CheckCircle2, type LucideIcon } from "lucide-react"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
-import type { RepairRequest } from "@/lib/types"
+import type { RequestStats } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Card,
@@ -42,14 +42,16 @@ function StatCard({ title, value, icon: Icon, loading }: StatCardProps) {
 
 export function DashboardPage() {
   const { user } = useAuth()
-  const requests = useQuery({
-    queryKey: ["requests"],
-    queryFn: () => api.get<RepairRequest[]>("/requests"),
+  // ключ — потомок ["requests"], чтобы инвалидация списка заявок
+  // (создание/смена статуса/закрытие) автоматически обновляла и счётчики
+  const stats = useQuery({
+    queryKey: ["requests", "stats"],
+    queryFn: () => api.get<RequestStats>("/requests/stats"),
   })
 
-  const total = requests.data?.length ?? 0
-  const open = requests.data?.filter((r) => !r.closed_at).length ?? 0
-  const closed = total - open
+  const total = stats.data?.total ?? 0
+  const open = stats.data?.open ?? 0
+  const closed = stats.data?.closed ?? 0
 
   return (
     <div className="space-y-6">
@@ -65,19 +67,19 @@ export function DashboardPage() {
           title="Всего заявок"
           value={total}
           icon={ClipboardList}
-          loading={requests.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           title="В работе"
           value={open}
           icon={Wrench}
-          loading={requests.isLoading}
+          loading={stats.isLoading}
         />
         <StatCard
           title="Закрыто"
           value={closed}
           icon={CheckCircle2}
-          loading={requests.isLoading}
+          loading={stats.isLoading}
         />
       </div>
     </div>

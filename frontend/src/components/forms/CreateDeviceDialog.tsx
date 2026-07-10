@@ -7,6 +7,7 @@ import type {
   CreateDeviceDTO,
   Device,
   DeviceType,
+  Page,
 } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -45,7 +46,7 @@ export function CreateDeviceDialog() {
   // справочники подгружаем только когда диалог открыт
   const clients = useQuery({
     queryKey: ["clients"],
-    queryFn: () => api.get<Client[]>("/clients"),
+    queryFn: () => api.get<Page<Client>>("/clients?limit=100"),
     enabled: open,
   })
   const types = useQuery({
@@ -58,7 +59,7 @@ export function CreateDeviceDialog() {
     setForm((f) => ({ ...f, [key]: value }))
 
   // items нужны Base UI, чтобы SelectValue показывал подпись, а не сырое value
-  const clientItems = (clients.data ?? []).map((c) => ({
+  const clientItems = (clients.data?.items ?? []).map((c) => ({
     value: c.id,
     label: `${c.phone} (${c.client_type === "individual" ? "физлицо" : "организация"})`,
   }))

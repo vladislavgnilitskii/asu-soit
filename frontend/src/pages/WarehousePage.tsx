@@ -1,14 +1,21 @@
 import { useState, type FormEvent } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { toast } from "sonner"
 import { api, ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { formatMoney } from "@/lib/format"
 import type {
   CreateSparePartDTO,
+  Page,
   PartCategory,
   SparePart,
 } from "@/lib/types"
+import { Pagination } from "@/components/Pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,9 +49,13 @@ export function WarehousePage() {
   const { user } = useAuth()
   const canWrite = user?.role === "admin" || user?.role === "storekeeper"
 
+  const limit = 20
+  const [offset, setOffset] = useState(0)
   const parts = useQuery({
-    queryKey: ["spare-parts"],
-    queryFn: () => api.get<SparePart[]>("/spare-parts"),
+    queryKey: ["spare-parts", offset],
+    queryFn: () =>
+      api.get<Page<SparePart>>(`/spare-parts?limit=${limit}&offset=${offset}`),
+    placeholderData: keepPreviousData,
   })
   const categories = useQuery({
     queryKey: ["part-categories"],
@@ -88,7 +99,7 @@ export function WarehousePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {parts.data.length === 0 && (
+              {parts.data.items.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={canWrite ? 7 : 6}
@@ -98,7 +109,7 @@ export function WarehousePage() {
                   </TableCell>
                 </TableRow>
               )}
-              {parts.data.map((p) => (
+              {parts.data.items.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{categoryName(p.category_id)}</TableCell>
@@ -127,6 +138,15 @@ export function WarehousePage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {parts.data && (
+        <Pagination
+          total={parts.data.total}
+          limit={parts.data.limit}
+          offset={parts.data.offset}
+          onChange={setOffset}
+        />
       )}
     </div>
   )

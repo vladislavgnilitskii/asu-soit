@@ -20,12 +20,13 @@ func NewDeviceHandler(repo *repository.DeviceRepository) *DeviceHandler {
 
 // GetAll — GET /api/v1/devices
 func (h *DeviceHandler) GetAll(c *gin.Context) {
-	devices, err := h.repo.GetAll(c.Request.Context())
+	p := parsePageParams(c)
+	devices, total, err := h.repo.GetAll(c.Request.Context(), p)
 	if err != nil {
 		respondInternal(c, "DeviceHandler.GetAll", err)
 		return
 	}
-	respondOK(c, devices)
+	respondOK(c, domain.NewPage(devices, total, p))
 }
 
 // GetByID — GET /api/v1/devices/:id

@@ -1,8 +1,14 @@
 import { useState, type FormEvent } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import { toast } from "sonner"
 import { api, ApiError } from "@/lib/api"
-import type { CreateEmployeeDTO, Employee, Role } from "@/lib/types"
+import type { CreateEmployeeDTO, Employee, Page, Role } from "@/lib/types"
+import { Pagination } from "@/components/Pagination"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,9 +41,13 @@ import { TableSkeleton } from "@/components/TableSkeleton"
 export function EmployeesPage() {
   const queryClient = useQueryClient()
 
+  const limit = 20
+  const [offset, setOffset] = useState(0)
   const employees = useQuery({
-    queryKey: ["employees"],
-    queryFn: () => api.get<Employee[]>("/employees"),
+    queryKey: ["employees", offset],
+    queryFn: () =>
+      api.get<Page<Employee>>(`/employees?limit=${limit}&offset=${offset}`),
+    placeholderData: keepPreviousData,
   })
   const roles = useQuery({
     queryKey: ["roles"],
@@ -90,7 +100,17 @@ export function EmployeesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.data.map((e) => (
+              {employees.data.items.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground"
+                  >
+                    Сотрудников нет
+                  </TableCell>
+                </TableRow>
+              )}
+              {employees.data.items.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">
                     {e.last_name} {e.first_name} {e.middle_name ?? ""}
@@ -117,6 +137,15 @@ export function EmployeesPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {employees.data && (
+        <Pagination
+          total={employees.data.total}
+          limit={employees.data.limit}
+          offset={employees.data.offset}
+          onChange={setOffset}
+        />
       )}
     </div>
   )

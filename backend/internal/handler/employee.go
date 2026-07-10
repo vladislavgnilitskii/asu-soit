@@ -63,12 +63,13 @@ func (h *EmployeeHandler) Create(c *gin.Context) {
 
 // GetAll — GET /employees
 func (h *EmployeeHandler) GetAll(c *gin.Context) {
-	employees, err := h.repo.GetAll(c.Request.Context())
+	p := parsePageParams(c)
+	employees, total, err := h.repo.GetAll(c.Request.Context(), p)
 	if err != nil {
 		respondInternal(c, "EmployeeHandler.GetAll", err)
 		return
 	}
-	respondOK(c, employees)
+	respondOK(c, domain.NewPage(employees, total, p))
 }
 
 // GetByID — GET /employees/:id

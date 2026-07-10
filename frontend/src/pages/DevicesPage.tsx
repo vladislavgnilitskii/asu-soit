@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
-import type { Device, DeviceType } from "@/lib/types"
+import type { Device, DeviceType, Page } from "@/lib/types"
 import { formatDate } from "@/lib/format"
+import { Pagination } from "@/components/Pagination"
 import { CreateDeviceDialog } from "@/components/forms/CreateDeviceDialog"
 import {
   Table,
@@ -18,9 +20,13 @@ export function DevicesPage() {
   const { user } = useAuth()
   const canCreate = user?.role === "admin" || user?.role === "manager"
 
+  const limit = 20
+  const [offset, setOffset] = useState(0)
   const devices = useQuery({
-    queryKey: ["devices"],
-    queryFn: () => api.get<Device[]>("/devices"),
+    queryKey: ["devices", offset],
+    queryFn: () =>
+      api.get<Page<Device>>(`/devices?limit=${limit}&offset=${offset}`),
+    placeholderData: keepPreviousData,
   })
   const types = useQuery({
     queryKey: ["device-types"],
@@ -62,7 +68,7 @@ export function DevicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {devices.data.length === 0 && (
+              {devices.data.items.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -72,7 +78,7 @@ export function DevicesPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {devices.data.map((d) => (
+              {devices.data.items.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell>{typeName(d.device_type_id)}</TableCell>
                   <TableCell>{d.brand}</TableCell>
@@ -84,6 +90,15 @@ export function DevicesPage() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {devices.data && (
+        <Pagination
+          total={devices.data.total}
+          limit={devices.data.limit}
+          offset={devices.data.offset}
+          onChange={setOffset}
+        />
       )}
     </div>
   )

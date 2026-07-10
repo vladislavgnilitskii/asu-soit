@@ -150,10 +150,17 @@ func (r *EmployeeRepository) Create(ctx context.Context, dto domain.CreateEmploy
 }
 
 // GetAll — список сотрудников (без секретов)
-func (r *EmployeeRepository) GetAll(ctx context.Context) ([]domain.Employee, error) {
-	rows, err := r.q(ctx).Query(ctx, `SELECT `+employeeColumns+` FROM employees ORDER BY last_name, first_name`)
+func (r *EmployeeRepository) GetAll(ctx context.Context, p domain.PageParams) ([]domain.Employee, int, error) {
+	var total int
+	if err := r.q(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM employees`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("GetAll employees count: %w", err)
+	}
+
+	rows, err := r.q(ctx).Query(ctx,
+		`SELECT `+employeeColumns+` FROM employees ORDER BY last_name, first_name LIMIT $1 OFFSET $2`,
+		p.Limit, p.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("GetAll employees: %w", err)
+		return nil, 0, fmt.Errorf("GetAll employees: %w", err)
 	}
 	defer rows.Close()
 
@@ -161,14 +168,14 @@ func (r *EmployeeRepository) GetAll(ctx context.Context) ([]domain.Employee, err
 	for rows.Next() {
 		e, err := scanEmployee(rows)
 		if err != nil {
-			return nil, fmt.Errorf("GetAll employees scan: %w", err)
+			return nil, 0, fmt.Errorf("GetAll employees scan: %w", err)
 		}
 		employees = append(employees, *e)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("GetAll employees rows: %w", err)
+		return nil, 0, fmt.Errorf("GetAll employees rows: %w", err)
 	}
-	return employees, nil
+	return employees, total, nil
 }
 
 // GetByID — сотрудник по id (без секретов)

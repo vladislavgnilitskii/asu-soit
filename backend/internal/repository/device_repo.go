@@ -24,15 +24,21 @@ func (r *DeviceRepository) q(ctx context.Context) dbtx.DBTX {
 }
 
 // GetAll — все устройства
-func (r *DeviceRepository) GetAll(ctx context.Context) ([]domain.Device, error) {
+func (r *DeviceRepository) GetAll(ctx context.Context, p domain.PageParams) ([]domain.Device, int, error) {
+	var total int
+	if err := r.q(ctx).QueryRow(ctx, `SELECT COUNT(*) FROM devices`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("GetAll devices count: %w", err)
+	}
+
 	rows, err := r.q(ctx).Query(ctx, `
 		SELECT id, client_id, device_type_id, brand, model,
 		       serial_number, appearance_note, created_at
 		FROM devices
 		ORDER BY created_at DESC
-	`)
+		LIMIT $1 OFFSET $2
+	`, p.Limit, p.Offset)
 	if err != nil {
-		return nil, fmt.Errorf("GetAll devices: %w", err)
+		return nil, 0, fmt.Errorf("GetAll devices: %w", err)
 	}
 	defer rows.Close()
 
@@ -44,14 +50,14 @@ func (r *DeviceRepository) GetAll(ctx context.Context) ([]domain.Device, error) 
 			&d.SerialNumber, &d.AppearanceNote, &d.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("GetAll devices scan: %w", err)
+			return nil, 0, fmt.Errorf("GetAll devices scan: %w", err)
 		}
 		devices = append(devices, d)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("GetAll devices rows: %w", err)
+		return nil, 0, fmt.Errorf("GetAll devices rows: %w", err)
 	}
-	return devices, nil
+	return devices, total, nil
 }
 
 // GetByID — одно устройство по id
